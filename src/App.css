@@ -395,6 +395,70 @@ body.dragging-splitter iframe { pointer-events: none; }
   color: var(--accent);
 }
 
+/* ─── Streaming file list ───────────────────────────────────── */
+.streaming-files {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  margin-top: 8px;
+}
+
+.streaming-file {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-family: 'SF Mono', 'Fira Code', monospace;
+  font-size: 12px;
+}
+
+.streaming-file.done { color: var(--green); }
+.streaming-file.active { color: var(--text-muted); }
+
+.streaming-file-icon {
+  width: 14px;
+  text-align: center;
+  flex-shrink: 0;
+}
+
+.streaming-file-icon.writing {
+  animation: blink 0.8s step-end infinite;
+  color: var(--accent);
+}
+
+/* ─── Raw output toggle ─────────────────────────────────────── */
+.raw-output-toggle {
+  margin-top: 10px;
+  border-top: 1px solid var(--border-subtle);
+  padding-top: 8px;
+}
+
+.raw-output-btn {
+  background: none;
+  border: none;
+  color: var(--text-subtle);
+  font-size: 11px;
+  cursor: pointer;
+  padding: 0;
+  transition: color 0.15s;
+}
+
+.raw-output-btn:hover { color: var(--text-muted); }
+
+.raw-output-pre {
+  margin-top: 8px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 10px 12px;
+  font-family: 'SF Mono', 'Fira Code', monospace;
+  font-size: 11px;
+  color: var(--text-muted);
+  white-space: pre-wrap;
+  word-break: break-all;
+  max-height: 400px;
+  overflow-y: auto;
+}
+
 .cursor-blink {
   animation: blink 0.8s step-end infinite;
   color: var(--accent);

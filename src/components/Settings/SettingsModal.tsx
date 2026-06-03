@@ -3,7 +3,6 @@ import type { Settings, AIProvider } from '../../types';
 import {
   ANTHROPIC_MODELS, DEFAULT_ANTHROPIC_MODEL,
   BEDROCK_MODELS, DEFAULT_BEDROCK_MODEL,
-  APERTURE_MODELS, DEFAULT_APERTURE_MODEL, APERTURE_DEFAULT_BASE_URL,
 } from '../../lib/ai';
 
 interface Props {
@@ -17,25 +16,24 @@ const BEDROCK_REGIONS = [
 ];
 
 export function SettingsModal({ initialSettings, onClose }: Props) {
-  const [provider, setProvider] = useState<AIProvider>(initialSettings.provider ?? 'aperture');
-  const [model, setModel] = useState(initialSettings.model ?? DEFAULT_APERTURE_MODEL);
+  const [provider, setProvider] = useState<AIProvider>(
+    (initialSettings.provider === 'aperture' ? 'anthropic' : initialSettings.provider) ?? 'anthropic'
+  );
+  const [model, setModel] = useState(
+    initialSettings.provider === 'aperture' ? DEFAULT_ANTHROPIC_MODEL : (initialSettings.model ?? DEFAULT_ANTHROPIC_MODEL)
+  );
   const [anthropicApiKey, setAnthropicApiKey] = useState(initialSettings.anthropicApiKey ?? '');
   const [bedrockRegion, setBedrockRegion] = useState(initialSettings.bedrockRegion ?? 'us-east-1');
   const [bedrockAccessKeyId, setBedrockAccessKeyId] = useState(initialSettings.bedrockAccessKeyId ?? '');
   const [bedrockSecretAccessKey, setBedrockSecretAccessKey] = useState(initialSettings.bedrockSecretAccessKey ?? '');
-  const [apertureBaseUrl, setApertureBaseUrl] = useState(initialSettings.apertureBaseUrl ?? APERTURE_DEFAULT_BASE_URL);
 
   const handleProviderChange = (p: AIProvider) => {
     setProvider(p);
-    setModel(
-      p === 'anthropic' ? DEFAULT_ANTHROPIC_MODEL :
-      p === 'bedrock'   ? DEFAULT_BEDROCK_MODEL :
-                          DEFAULT_APERTURE_MODEL
-    );
+    setModel(p === 'anthropic' ? DEFAULT_ANTHROPIC_MODEL : DEFAULT_BEDROCK_MODEL);
   };
 
   const handleClose = () => {
-    onClose({ provider, model, anthropicApiKey, bedrockRegion, bedrockAccessKeyId, bedrockSecretAccessKey, apertureBaseUrl });
+    onClose({ provider, model, anthropicApiKey, bedrockRegion, bedrockAccessKeyId, bedrockSecretAccessKey });
   };
 
   return (
@@ -50,12 +48,6 @@ export function SettingsModal({ initialSettings, onClose }: Props) {
           <div className="field-group">
             <label className="field-label">AI Provider</label>
             <div className="toggle-group">
-              <button
-                className={`toggle-btn ${provider === 'aperture' ? 'active' : ''}`}
-                onClick={() => handleProviderChange('aperture')}
-              >
-                Aperture
-              </button>
               <button
                 className={`toggle-btn ${provider === 'anthropic' ? 'active' : ''}`}
                 onClick={() => handleProviderChange('anthropic')}
@@ -78,31 +70,11 @@ export function SettingsModal({ initialSettings, onClose }: Props) {
               value={model}
               onChange={e => setModel(e.target.value)}
             >
-              {(provider === 'anthropic' ? ANTHROPIC_MODELS
-                : provider === 'bedrock' ? BEDROCK_MODELS
-                : APERTURE_MODELS
-              ).map(m => (
+              {(provider === 'anthropic' ? ANTHROPIC_MODELS : BEDROCK_MODELS).map(m => (
                 <option key={m.id} value={m.id}>{m.label}</option>
               ))}
             </select>
           </div>
-
-          {provider === 'aperture' && (
-            <div className="field-group">
-              <label className="field-label">Aperture Base URL</label>
-              <input
-                className="field-input"
-                type="text"
-                value={apertureBaseUrl}
-                placeholder="http://ai"
-                onChange={e => setApertureBaseUrl(e.target.value)}
-              />
-              <p className="field-hint">
-                Cribl's internal AI gateway (Tailscale). Default: <code>http://ai</code>.
-                Requires the Cribl server to be on Tailscale — see <strong>#proj-ts-aperture-enablement</strong>.
-              </p>
-            </div>
-          )}
 
           {provider === 'anthropic' && (
             <div className="field-group">

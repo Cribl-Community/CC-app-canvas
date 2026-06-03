@@ -6,12 +6,41 @@ import { ChatInput } from './ChatInput';
 interface Props {
   messages: ChatMessageType[];
   streamingText: string;
+  streamingRaw: string;
   isStreaming: boolean;
   onSend: (text: string) => void;
   hasProject: boolean;
 }
 
-export function ChatPanel({ messages, streamingText, isStreaming, onSend, hasProject }: Props) {
+interface StreamingDisplay {
+  narrativeText: string;
+  completedFiles: string[];
+  activeFile: string | null;
+}
+
+function parseStreamingDisplay(raw: string): StreamingDisplay {
+  const completedFiles: string[] = [];
+  const fileRegex = /<file\s+path="([^"]+)">([\s\S]*?)<\/file>/g;
+  let text = raw;
+  let match: RegExpExecArray | null;
+
+  while ((match = fileRegex.exec(raw)) !== null) {
+    completedFiles.push(match[1]);
+    text = text.replace(match[0], '');
+  }
+
+  // Detect an in-progress file block (opening tag with no closing tag)
+  const inProgressMatch = text.match(/<file\s+path="([^"]+)">([\s\S]*)$/);
+  let activeFile: string | null = null;
+  if (inProgressMatch) {
+    activeFile = inProgressMatch[1];
+    text = text.replace(inProgressMatch[0], '');
+  }
+
+  return { narrativeText: text.trim(), completedFiles, activeFile };
+}
+
+export function ChatPanel({ messages, streamingText, streamingRaw, isStreaming, onSend, hasProject }: Props) {
   const bottomRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -40,16 +69,40 @@ export function ChatPanel({ messages, streamingText, isStreaming, onSend, hasPro
           <ChatMessage key={msg.id} message={msg} />
         ))}
 
-        {isStreaming && streamingText && (
-          <div className="chat-message assistant streaming">
-            <div className="chat-avatar">AI</div>
-            <div className="chat-bubble">
-              <p className="chat-text">{streamingText}<span className="cursor-blink">▌</span></p>
+        {isStreaming && streamingRaw && (() => {
+          const { narrativeText, completedFiles, activeFile } = parseStreamingDisplay(streamingRaw);
+          return (
+            <div className="chat-message assistant streaming">
+              <div className="chat-avatar">AI</div>
+              <div className="chat-bubble">
+                {narrativeText && (
+                  <p className="chat-text">{narrativeText}</p>
+                )}
+                {(completedFiles.length > 0 || activeFile) && (
+                  <div className="streaming-files">
+                    {completedFiles.map(f => (
+                      <div key={f} className="streaming-file done">
+                        <span className="streaming-file-icon">✓</span>
+                        <span className="streaming-file-name">{f}</span>
+                      </div>
+                    ))}
+                    {activeFile && (
+                      <div className="streaming-file active">
+                        <span className="streaming-file-icon writing">…</span>
+                        <span className="streaming-file-name">{activeFile}</span>
+                      </div>
+                    )}
+                  </div>
+                )}
+                {!narrativeText && completedFiles.length === 0 && !activeFile && (
+                  <span className="cursor-blink">▌</span>
+                )}
+              </div>
             </div>
-          </div>
-        )}
+          );
+        })()}
 
-        {isStreaming && !streamingText && (
+        {isStreaming && !streamingRaw && (
           <div className="chat-message assistant">
             <div className="chat-avatar">AI</div>
             <div className="chat-bubble">

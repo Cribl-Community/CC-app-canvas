@@ -1,4 +1,4 @@
-export type AIProvider = 'anthropic' | 'bedrock' | 'aperture';
+export type AIProvider = 'anthropic' | 'bedrock';
 
 export interface Settings {
   provider: AIProvider;
@@ -7,7 +7,6 @@ export interface Settings {
   bedrockRegion: string;
   bedrockAccessKeyId: string;
   bedrockSecretAccessKey: string;
-  apertureBaseUrl: string;
 }
 
 export interface ProjectMeta {
@@ -24,6 +23,8 @@ export interface ChatMessage {
   content: string;
   /** File paths mentioned/generated in this message */
   files?: string[];
+  /** Full unstripped AI response — stored so the user can toggle "show raw output" */
+  rawContent?: string;
 }
 
 export interface ProjectFiles {

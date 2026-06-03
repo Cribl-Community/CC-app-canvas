@@ -20,6 +20,7 @@ export default function App() {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [files, setFiles] = useState<ProjectFiles>({});
   const [streamingText, setStreamingText] = useState('');
+  const [streamingRaw, setStreamingRaw] = useState('');
   const [isStreaming, setIsStreaming] = useState(false);
   const [previewTrigger, setPreviewTrigger] = useState(0);
   const [showEditor, setShowEditor] = useState(false);
@@ -41,7 +42,7 @@ export default function App() {
         }
       } catch { /* ignore */ }
     }
-    return { provider: 'aperture', model: 'us.anthropic.claude-sonnet-4-6', apertureBaseUrl: 'http://ai' };
+    return { provider: 'anthropic', model: 'claude-sonnet-4-5' };
   });
   const [downloading, setDownloading] = useState(false);
   const [chatWidthPct, setChatWidthPct] = useState(40);
@@ -174,6 +175,7 @@ export default function App() {
     setMessages(nextMessages);
     setIsStreaming(true);
     setStreamingText('');
+    setStreamingRaw('');
 
     // Save user message
     await saveMessages(projectId, nextMessages);
@@ -197,6 +199,7 @@ export default function App() {
           // Show narrative text (strip file blocks from display)
           const { text: displayText } = parseAIResponse(accumulated);
           setStreamingText(displayText);
+          setStreamingRaw(accumulated);
         } else if (chunk.type === 'error') {
           hasError = true;
           accumulated = `Error: ${chunk.error}`;
@@ -222,11 +225,13 @@ export default function App() {
       role: 'assistant',
       content: displayText || accumulated,
       files: Object.keys(newFiles),
+      rawContent: accumulated,
     };
 
     const finalMessages = [...nextMessages, assistantMsg];
     setMessages(finalMessages);
     setStreamingText('');
+    setStreamingRaw('');
     setIsStreaming(false);
 
     if (!hasError) {
@@ -340,13 +345,14 @@ export default function App() {
 
         <main className="main-area" ref={mainAreaRef}>
           <div className="chat-column" style={{ flexBasis: `${chatWidthPct}%` }}>
-            <ChatPanel
-              messages={messages}
-              streamingText={streamingText}
-              isStreaming={isStreaming}
-              onSend={handleSend}
-              hasProject={!!activeProjectId}
-            />
+          <ChatPanel
+            messages={messages}
+            streamingText={streamingText}
+            streamingRaw={streamingRaw}
+            isStreaming={isStreaming}
+            onSend={handleSend}
+            hasProject={!!activeProjectId}
+          />
           </div>
 
           <div className="splitter-handle" onMouseDown={handleSplitterMouseDown} />

@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import type { ChatMessage as ChatMessageType } from '../../types';
 
 interface Props {
@@ -6,6 +7,7 @@ interface Props {
 
 export function ChatMessage({ message }: Props) {
   const isUser = message.role === 'user';
+  const [showRaw, setShowRaw] = useState(false);
 
   return (
     <div className={`chat-message ${isUser ? 'user' : 'assistant'}`}>
@@ -17,6 +19,19 @@ export function ChatMessage({ message }: Props) {
             {message.files.map(f => (
               <span key={f} className="file-chip">{f}</span>
             ))}
+          </div>
+        )}
+        {message.rawContent && (
+          <div className="raw-output-toggle">
+            <button
+              className="raw-output-btn"
+              onClick={() => setShowRaw(v => !v)}
+            >
+              {showRaw ? '▾ Hide raw output' : '▸ Show raw output'}
+            </button>
+            {showRaw && (
+              <pre className="raw-output-pre">{message.rawContent}</pre>
+            )}
           </div>
         )}
       </div>

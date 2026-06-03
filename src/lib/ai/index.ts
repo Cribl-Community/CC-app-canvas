@@ -1,24 +1,18 @@
 import type { ChatMessage, StreamChunk, Settings } from '../../types';
 import { streamAnthropic, DEFAULT_ANTHROPIC_MODEL } from './anthropic';
 import { streamBedrock, DEFAULT_BEDROCK_MODEL } from './bedrock';
-import { streamAperture, DEFAULT_APERTURE_MODEL, APERTURE_DEFAULT_BASE_URL } from './aperture';
 
 export { ANTHROPIC_MODELS, DEFAULT_ANTHROPIC_MODEL } from './anthropic';
 export { BEDROCK_MODELS, DEFAULT_BEDROCK_MODEL } from './bedrock';
-export { APERTURE_MODELS, DEFAULT_APERTURE_MODEL, APERTURE_DEFAULT_BASE_URL } from './aperture';
 
 export async function* streamAI(
   messages: ChatMessage[],
   settings: Partial<Settings>,
   signal?: AbortSignal,
 ): AsyncGenerator<StreamChunk> {
-  const provider = settings.provider ?? 'aperture';
+  const provider = settings.provider ?? 'anthropic';
 
-  if (provider === 'aperture') {
-    const model = settings.model ?? DEFAULT_APERTURE_MODEL;
-    const baseUrl = settings.apertureBaseUrl || APERTURE_DEFAULT_BASE_URL;
-    yield* streamAperture(messages, model, baseUrl, signal);
-  } else if (provider === 'anthropic') {
+  if (provider === 'anthropic') {
     const model = settings.model ?? DEFAULT_ANTHROPIC_MODEL;
     yield* streamAnthropic(messages, model, settings.anthropicApiKey, signal);
   } else {
