@@ -1,0 +1,1326 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Cribl API Reference",
+    "description": "This API Reference lists available REST endpoints, along with their supported operations for accessing, creating, updating, or deleting resources.\nBase URL contexts for reference:\n- Leader context: /api/v1\n- Worker Group or Edge Fleet context: /api/v1/m/{groupName}\n- Host (Worker or Edge Node) conte"
+  },
+  "servers": [
+    {
+      "url": "/"
+    }
+  ],
+  "paths": {
+    "/search/jobs": {
+      "get": {
+        "operationId": "listSearchJob",
+        "x-cribl-internal": false,
+        "x-cribl-availability": "cloud",
+        "x-speakeasy-name-override": "list",
+        "tags": [
+          "search"
+        ],
+        "summary": "List all search jobs (Cribl.Cloud only)",
+        "description": "Get a list of all search jobs (Cribl.Cloud only). Supports filtering, sorting, and pagination.",
+        "responses": {
+          "200": {
+            "description": "Matching search jobs or abbreviated rows when <code>output=short</code>",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CountedSearchJob"
+                },
+                "examples": {
+                  "SearchJobListResponseExamplesFullJobRow": {
+                    "$ref": "#/components/examples/SearchJobListResponseExamplesFullJobRow"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication failed (missing or invalid credentials or Bearer token)."
+          },
+          "500": {
+            "description": "Unexpected server error.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "output",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Output format. Use <code>short</code> to return abbreviated job information."
+          },
+          {
+            "name": "id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "description": "Filter by job IDs. Can specify multiple IDs."
+          },
+          {
+            "name": "earliest",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Filter jobs by earliest time."
+          },
+          {
+            "name": "type",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "$ref": "#/components/schemas/SearchJobType"
+            },
+            "description": "Filter by job type."
+          },
+          {
+            "name": "sortExp",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Sorting expression to evaluate against jobs to specify the sort order."
+          },
+          {
+            "name": "sortDir",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Sort direction. Use <code>asc</code> or <code>desc</code>. Defaults to <code>asc</code>."
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer"
+            },
+            "description": "Maximum number of jobs to return. Use with <code>offset</code> to paginate results."
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer"
+            },
+            "description": "Starting point from which to retrieve results. Use with <code>limit</code> to paginate results."
+          },
+          {
+            "name": "latest",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Filter jobs by latest time. Used when <code>output=short</code>."
+          },
+          {
+            "name": "correlationId",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Filter by correlation ID. Used when <code>output=short</code>."
+          },
+          {
+            "name": "groupByCorrelationId",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean"
+            },
+            "description": "Group scheduled searches by correlation ID. Used when <code>output=short</code>."
+          },
+          {
+            "name": "filterExp",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Filter expression to evaluate against jobs for inclusion in the response. Used when <code>output=short</code>."
+          },
+          {
+            "name": "totalEventCount",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean"
+            },
+            "description": "Include total event count in response. Used when <code>output=short</code>."
+          },
+          {
+            "name": "includeSavedQueryNames",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean"
+            },
+            "description": "Include saved query names in response. Used when <code>output=short</code>."
+          }
+        ],
+        "x-speakeasy-pagination": {
+          "type": "offsetLimit",
+          "inputs": [
+            {
+              "name": "offset",
+              "in": "parameters",
+              "type": "offset"
+            },
+            {
+              "name": "limit",
+              "in": "parameters",
+              "type": "limit"
+            }
+          ],
+          "outputs": {
+            "results": "$.items"
+          }
+        }
+      },
+      "post": {
+        "operationId": "createSearchJob",
+        "x-cribl-internal": false,
+        "x-cribl-availability": "cloud",
+        "x-speakeasy-name-override": "create",
+        "tags": [
+          "search"
+        ],
+        "summary": "Create a search job (Cribl.Cloud only)",
+        "description": "Create a new search job to execute a Cribl search query (Cribl.Cloud only).",
+        "requestBody": {
+          "description": "CreateSearchJobSchema object.",
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateSearchJobSchema"
+              },
+              "examples": {
+                "SearchJobCreateExamplesMinimal": {
+                  "$ref": "#/components/examples/SearchJobCreateExamplesMinimal"
+                },
+                "SearchJobCreateExamplesWithTimeRange": {
+                  "$ref": "#/components/examples/SearchJobCreateExamplesWithTimeRange"
+                },
+                "SearchJobCreateExamplesEventContext": {
+                  "$ref": "#/components/examples/SearchJobCreateExamplesEventContext"
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "A list containing the created search job object",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CountedSearchJob"
+                },
+                "examples": {
+                  "SearchJobCreateResponseExamplesSyntheticCompleted": {
+                    "$ref": "#/components/examples/SearchJobCreateResponseExamplesSyntheticCompleted"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid query or request validation failure."
+          },
+          "401": {
+            "description": "Authentication failed (missing or invalid credentials or Bearer token)."
+          },
+          "429": {
+            "description": "Search limit or concurrency guardrail exceeded."
+          },
+          "500": {
+            "description": "Unexpected server error.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/search/jobs/{id}": {
+      "get": {
+        "operationId": "getSearchJobById",
+        "x-cribl-internal": false,
+        "x-cribl-availability": "cloud",
+        "x-speakeasy-name-override": "get",
+        "tags": [
+          "search"
+        ],
+        "summary": "Get a search job (Cribl.Cloud only)",
+        "description": "Get the specified search job (Cribl.Cloud only).",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "The <code>id</code> of the search job to get."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The requested search job",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CountedSearchJob"
+                },
+                "examples": {
+                  "SearchJobCreateResponseExamplesSyntheticCompleted": {
+                    "$ref": "#/components/examples/SearchJobCreateResponseExamplesSyntheticCompleted"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication failed (missing or invalid credentials or Bearer token)."
+          },
+          "500": {
+            "description": "Unexpected server error.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch": {
+        "operationId": "updateSearchJobById",
+        "x-cribl-internal": true,
+        "x-cribl-availability": "cloud",
+        "x-speakeasy-name-override": "update",
+        "tags": [
+          "search"
+        ],
+        "summary": "Update a search job (Cribl.Cloud only)",
+        "description": "Update the specified search job (Cribl.Cloud only). Only the <code>status</code> and <code>isPrivate</code> fields are mutable.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "The <code>id</code> of the search job to update."
+          }
+        ],
+        "requestBody": {
+          "description": "UpdateSearchJobSchema object.",
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateSearchJobSchema"
+              },
+              "examples": {
+                "SearchJobUpdateExamplesCancel": {
+                  "$ref": "#/components/examples/SearchJobUpdateExamplesCancel"
+                },
+                "SearchJobUpdateExamplesMakeResultsPublic": {
+                  "$ref": "#/components/examples/SearchJobUpdateExamplesMakeResultsPublic"
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "A list containing the updated search job object",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CountedSearchJob"
+                },
+                "examples": {
+                  "SearchJobCreateResponseExamplesSyntheticCompleted": {
+                    "$ref": "#/components/examples/SearchJobCreateResponseExamplesSyntheticCompleted"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication failed (missing or invalid credentials or Bearer token)."
+          },
+          "404": {
+            "description": "Search job not found."
+          },
+          "500": {
+            "description": "Unexpected server error.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "operationId": "deleteSearchJobById",
+        "x-cribl-internal": true,
+        "x-cribl-availability": "cloud",
+        "x-speakeasy-name-override": "delete",
+        "tags": [
+          "search"
+        ],
+        "summary": "Delete a search job (Cribl.Cloud only)",
+        "description": "Delete the specified search job (Cribl.Cloud only).",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "The <code>id</code> of the search job to delete."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Deleted job records",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CountedSearchJob"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication failed (missing or invalid credentials or Bearer token)."
+          },
+          "500": {
+            "description": "Unexpected server error.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/master/groups": {
+      "post": {
+        "operationId": "createGroups",
+        "tags": [
+          "groups"
+        ],
+        "x-cribl-internal": false,
+        "x-cribl-availability": "both",
+        "summary": "Create a Fleet, Worker Group, or Outpost Group",
+        "description": "Create a Fleet, Worker Group, or Outpost Group. Deprecated. <br/><br/>Use <code>POST /products/{product}/groups</code> instead.",
+        "deprecated": true,
+        "responses": {
+          "200": {
+            "description": "The created ConfigGroup object in a single-item list.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CountedConfigGroup"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication failed (missing or invalid credentials or Bearer token)."
+          },
+          "500": {
+            "description": "Unexpected server error.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "description": "GroupCreateRequest object.",
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GroupCreateRequest"
+              },
+              "examples": {
+                "CreateGroupExamplesCloudWg": {
+                  "$ref": "#/components/examples/CreateGroupExamplesCloudWg"
+                },
+                "CreateGroupExamplesOnPremWg": {
+                  "$ref": "#/components/examples/CreateGroupExamplesOnPremWg"
+                },
+                "CreateGroupExamplesCloneWg": {
+                  "$ref": "#/components/examples/CreateGroupExamplesCloneWg"
+                },
+                "CreateGroupExamplesEdgeFleet": {
+                  "$ref": "#/components/examples/CreateGroupExamplesEdgeFleet"
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "operationId": "getGroups",
+        "tags": [
+          "groups"
+        ],
+        "x-cribl-internal": false,
+        "x-cribl-availability": "both",
+        "summary": "Get a list of ConfigGroup objects",
+        "description": "Get a list of ConfigGroup objects. Deprecated. <br/><br/>Use <code>GET /products/{product}/groups</code> instead.",
+        "deprecated": true,
+        "responses": {
+          "200": {
+            "description": "List of ConfigGroup objects.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CountedConfigGroup"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication failed (missing or invalid credentials or Bearer token)."
+          },
+          "500": {
+            "description": "Unexpected server error.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "fields",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "fields to add to results: git.commit, git.localChanges, git.log"
+          },
+          {
+            "name": "product",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "$ref": "#/components/schemas/ProductsAll"
+            },
+            "description": "filter to specific product"
+          }
+        ]
+      }
+    },
+    "/system/info": {
+      "get": {
+        "operationId": "getSystemInfo",
+        "tags": [
+          "diag"
+        ],
+        "x-speakeasy-group": "system.info",
+        "x-speakeasy-name-override": "list",
+        "x-cribl-internal": false,
+        "x-cribl-availability": "both",
+        "summary": "Get system information",
+        "description": "Get basic system information for the current Cribl instance.",
+        "responses": {
+          "200": {
+            "description": "Basic system information",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CountedSystemInfo"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication failed (missing or invalid credentials or Bearer token)."
+          },
+          "500": {
+            "description": "Unexpected server error.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "fields",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Comma-separated list of <code>SystemInfoField</code> values to include in the response."
+          },
+          {
+            "name": "messages",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean"
+            },
+            "description": "If <code>true</code>, include system messages in the response."
+          },
+          {
+            "name": "conf",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean"
+            },
+            "description": "If <code>true</code>, include a configuration summary in the response."
+          }
+        ]
+      }
+    },
+    "/pipelines": {
+      "post": {
+        "operationId": "createPipelines",
+        "tags": [
+          "pipelines"
+        ],
+        "x-speakeasy-group": "pipelines",
+        "x-speakeasy-name-override": "create",
+        "x-cribl-internal": false,
+        "x-cribl-availability": "both",
+        "summary": "Create a Pipeline",
+        "description": "Create a new Pipeline.",
+        "responses": {
+          "200": {
+            "description": "a list of Pipelines objects",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CountedPipeline"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication failed (missing or invalid credentials or Bearer token)."
+          },
+          "500": {
+            "description": "Unexpected server error.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "description": "Pipeline object.",
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Pipeline"
+              },
+              "examples": {
+                "PipelineExamplesEmpty": {
+                  "$ref": "#/components/examples/PipelineExamplesEmpty"
+                },
+                "PipelineExamplesAggregations": {
+                  "$ref": "#/components/examples/PipelineExamplesAggregations"
+                },
+                "PipelineExamplesAggregateMetrics": {
+                  "$ref": "#/components/examples/PipelineExamplesAggregateMetrics"
+                },
+                "PipelineExamplesAutoTimestamp": {
+                  "$ref": "#/components/examples/PipelineExamplesAutoTimestamp"
+                },
+                "PipelineExamplesCEFSerializer": {
+                  "$ref": "#/components/examples/PipelineExamplesCEFSerializer"
+                },
+                "PipelineExamplesChain": {
+                  "$ref": "#/components/examples/PipelineExamplesChain"
+                },
+                "PipelineExamplesClone": {
+                  "$ref": "#/components/examples/PipelineExamplesClone"
+                },
+                "PipelineExamplesComment": {
+                  "$ref": "#/components/examples/PipelineExamplesComment"
+                },
+                "PipelineExamplesDNSLookup": {
+                  "$ref": "#/components/examples/PipelineExamplesDNSLookup"
+                },
+                "PipelineExamplesDrop": {
+                  "$ref": "#/components/examples/PipelineExamplesDrop"
+                },
+                "PipelineExamplesDropDimensions": {
+                  "$ref": "#/components/examples/PipelineExamplesDropDimensions"
+                },
+                "PipelineExamplesDynamicSampling": {
+                  "$ref": "#/components/examples/PipelineExamplesDynamicSampling"
+                },
+                "PipelineExamplesEval": {
+                  "$ref": "#/components/examples/PipelineExamplesEval"
+                },
+                "PipelineExamplesEventBreaker": {
+                  "$ref": "#/components/examples/PipelineExamplesEventBreaker"
+                },
+                "PipelineExamplesFlatten": {
+                  "$ref": "#/components/examples/PipelineExamplesFlatten"
+                },
+                "PipelineExamplesFoldKeys": {
+                  "$ref": "#/components/examples/PipelineExamplesFoldKeys"
+                },
+                "PipelineExamplesGeoIP": {
+                  "$ref": "#/components/examples/PipelineExamplesGeoIP"
+                },
+                "PipelineExamplesGrok": {
+                  "$ref": "#/components/examples/PipelineExamplesGrok"
+                },
+                "PipelineExamplesGuard": {
+                  "$ref": "#/components/examples/PipelineExamplesGuard"
+                },
+                "PipelineExamplesJSONUnroll": {
+                  "$ref": "#/components/examples/PipelineExamplesJSONUnroll"
+                },
+                "PipelineExamplesLookup": {
+                  "$ref": "#/components/examples/PipelineExamplesLookup"
+                },
+                "PipelineExamplesMask": {
+                  "$ref": "#/components/examples/PipelineExamplesMask"
+                },
+                "PipelineExamplesNumerify": {
+                  "$ref": "#/components/examples/PipelineExamplesNumerify"
+                },
+                "PipelineExamplesOTLPLogs": {
+                  "$ref": "#/components/examples/PipelineExamplesOTLPLogs"
+                },
+                "PipelineExamplesOTLPMetrics": {
+                  "$ref": "#/components/examples/PipelineExamplesOTLPMetrics"
+                },
+                "PipelineExamplesOTLPTraces": {
+                  "$ref": "#/components/examples/PipelineExamplesOTLPTraces"
+                },
+                "PipelineExamplesParser": {
+                  "$ref": "#/components/examples/PipelineExamplesParser"
+                },
+                "PipelineExamplesPublishMetrics": {
+                  "$ref": "#/components/examples/PipelineExamplesPublishMetrics"
+                },
+                "PipelineExamplesRedis": {
+                  "$ref": "#/components/examples/PipelineExamplesRedis"
+                },
+                "PipelineExamplesRegexExtract": {
+                  "$ref": "#/components/examples/PipelineExamplesRegexExtract"
+                },
+                "PipelineExamplesRegexFilter": {
+                  "$ref": "#/components/examples/PipelineExamplesRegexFilter"
+                },
+                "PipelineExamplesRename": {
+                  "$ref": "#/components/examples/PipelineExamplesRename"
+                },
+                "PipelineExamplesRollupMetrics": {
+                  "$ref": "#/components/examples/PipelineExamplesRollupMetrics"
+                },
+                "PipelineExamplesSampling": {
+                  "$ref": "#/components/examples/PipelineExamplesSampling"
+                },
+                "PipelineExamplesSerialize": {
+                  "$ref": "#/components/examples/PipelineExamplesSerialize"
+                },
+                "PipelineExamplesSNMPTrapSerialize": {
+                  "$ref": "#/components/examples/PipelineExamplesSNMPTrapSerialize"
+                },
+                "PipelineExamplesSuppress": {
+                  "$ref": "#/components/examples/PipelineExamplesSuppress"
+                },
+                "PipelineExamplesTee": {
+                  "$ref": "#/components/examples/PipelineExamplesTee"
+                },
+                "PipelineExamplesUnroll": {
+                  "$ref": "#/components/examples/PipelineExamplesUnroll"
+                },
+                "PipelineExamplesXMLUnroll": {
+                  "$ref": "#/components/examples/PipelineExamplesXMLUnroll"
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "operationId": "getPipelines",
+        "tags": [
+          "pipelines"
+        ],
+        "x-speakeasy-group": "pipelines",
+        "x-speakeasy-name-override": "list",
+        "x-cribl-internal": false,
+        "x-cribl-availability": "both",
+        "summary": "List all Pipelines",
+        "description": "Get a list of all Pipelines.",
+        "responses": {
+          "200": {
+            "description": "a list of Pipeline objects",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CountedPipeline"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication failed (missing or invalid credentials or Bearer token)."
+          },
+          "500": {
+            "description": "Unexpected server error.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/pipelines/{id}": {
+      "delete": {
+        "operationId": "deletePipelinesById",
+        "tags": [
+          "pipelines"
+        ],
+        "x-speakeasy-group": "pipelines",
+        "x-speakeasy-name-override": "delete",
+        "x-cribl-internal": false,
+        "x-cribl-availability": "both",
+        "summary": "Delete a Pipeline",
+        "description": "Delete the specified Pipeline.",
+        "responses": {
+          "200": {
+            "description": "a list of Pipeline objects",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CountedPipeline"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication failed (missing or invalid credentials or Bearer token)."
+          },
+          "500": {
+            "description": "Unexpected server error.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "The <code>id</code> of the Pipeline to delete."
+          }
+        ]
+      },
+      "get": {
+        "operationId": "getPipelinesById",
+        "tags": [
+          "pipelines"
+        ],
+        "x-speakeasy-group": "pipelines",
+        "x-speakeasy-name-override": "get",
+        "x-cribl-internal": false,
+        "x-cribl-availability": "both",
+        "summary": "Get a Pipeline",
+        "description": "Get the specified Pipeline.",
+        "responses": {
+          "200": {
+            "description": "a list of Pipeline objects",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CountedPipeline"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication failed (missing or invalid credentials or Bearer token)."
+          },
+          "500": {
+            "description": "Unexpected server error.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "The <code>id</code> of the Pipeline to get."
+          }
+        ]
+      },
+      "patch": {
+        "operationId": "updatePipelinesById",
+        "tags": [
+          "pipelines"
+        ],
+        "x-speakeasy-group": "pipelines",
+        "x-speakeasy-name-override": "update",
+        "x-cribl-internal": false,
+        "x-cribl-availability": "both",
+        "summary": "Update a Pipeline",
+        "description": "Update the specified Pipeline.<br/><br/>Provide a complete representation of the Pipeline that you want to update in the request body. This endpoint does not support partial updates. Cribl removes any omitted fields when updating the Pipeline.<br/><br/>Confirm that the configuration in your request body is correct before sending the request. If the configuration is incorrect, the updated Pipeline might not function as expected.",
+        "responses": {
+          "200": {
+            "description": "a list of Pipeline objects",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CountedPipeline"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication failed (missing or invalid credentials or Bearer token)."
+          },
+          "500": {
+            "description": "Unexpected server error.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "description": "Pipeline object.",
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Pipeline"
+              },
+              "examples": {
+                "UpdatePipelineExamplesEmpty": {
+                  "$ref": "#/components/examples/UpdatePipelineExamplesEmpty"
+                },
+                "UpdatePipelineExamplesAggregations": {
+                  "$ref": "#/components/examples/UpdatePipelineExamplesAggregations"
+                },
+                "UpdatePipelineExamplesAggregateMetrics": {
+                  "$ref": "#/components/examples/UpdatePipelineExamplesAggregateMetrics"
+                },
+                "UpdatePipelineExamplesAutoTimestamp": {
+                  "$ref": "#/components/examples/UpdatePipelineExamplesAutoTimestamp"
+                },
+                "UpdatePipelineExamplesCEFSerializer": {
+                  "$ref": "#/components/examples/UpdatePipelineExamplesCEFSerializer"
+                },
+                "UpdatePipelineExamplesChain": {
+                  "$ref": "#/components/examples/UpdatePipelineExamplesChain"
+                },
+                "UpdatePipelineExamplesClone": {
+                  "$ref": "#/components/examples/UpdatePipelineExamplesClone"
+                },
+                "UpdatePipelineExamplesComment": {
+                  "$ref": "#/components/examples/UpdatePipelineExamplesComment"
+                },
+                "UpdatePipelineExamplesDNSLookup": {
+                  "$ref": "#/components/examples/UpdatePipelineExamplesDNSLookup"
+                },
+                "UpdatePipelineExamplesDrop": {
+                  "$ref": "#/components/examples/UpdatePipelineExamplesDrop"
+                },
+                "UpdatePipelineExamplesDropDimensions": {
+                  "$ref": "#/components/examples/UpdatePipelineExamplesDropDimensions"
+                },
+                "UpdatePipelineExamplesDynamicSampling": {
+                  "$ref": "#/components/examples/UpdatePipelineExamplesDynamicSampling"
+                },
+                "UpdatePipelineExamplesEval": {
+                  "$ref": "#/components/examples/UpdatePipelineExamplesEval"
+                },
+                "UpdatePipelineExamplesEventBreaker": {
+                  "$ref": "#/components/examples/UpdatePipelineExamplesEventBreaker"
+                },
+                "UpdatePipelineExamplesFlatten": {
+                  "$ref": "#/components/examples/UpdatePipelineExamplesFlatten"
+                },
+                "UpdatePipelineExamplesFoldKeys": {
+                  "$ref": "#/components/examples/UpdatePipelineExamplesFoldKeys"
+                },
+                "UpdatePipelineExamplesGeoIP": {
+                  "$ref": "#/components/examples/UpdatePipelineExamplesGeoIP"
+                },
+                "UpdatePipelineExamplesGrok": {
+                  "$ref": "#/components/examples/UpdatePipelineExamplesGrok"
+                },
+                "UpdatePipelineExamplesGuard": {
+                  "$ref": "#/components/examples/UpdatePipelineExamplesGuard"
+                },
+                "UpdatePipelineExamplesJSONUnroll": {
+                  "$ref": "#/components/examples/UpdatePipelineExamplesJSONUnroll"
+                },
+                "UpdatePipelineExamplesLookup": {
+                  "$ref": "#/components/examples/UpdatePipelineExamplesLookup"
+                },
+                "UpdatePipelineExamplesMask": {
+                  "$ref": "#/components/examples/UpdatePipelineExamplesMask"
+                },
+                "UpdatePipelineExamplesNumerify": {
+                  "$ref": "#/components/examples/UpdatePipelineExamplesNumerify"
+                },
+                "UpdatePipelineExamplesOTLPLogs": {
+                  "$ref": "#/components/examples/UpdatePipelineExamplesOTLPLogs"
+                },
+                "UpdatePipelineExamplesOTLPMetrics": {
+                  "$ref": "#/components/examples/UpdatePipelineExamplesOTLPMetrics"
+                },
+                "UpdatePipelineExamplesOTLPTraces": {
+                  "$ref": "#/components/examples/UpdatePipelineExamplesOTLPTraces"
+                },
+                "UpdatePipelineExamplesParser": {
+                  "$ref": "#/components/examples/UpdatePipelineExamplesParser"
+                },
+                "UpdatePipelineExamplesPublishMetrics": {
+                  "$ref": "#/components/examples/UpdatePipelineExamplesPublishMetrics"
+                },
+                "UpdatePipelineExamplesRedis": {
+                  "$ref": "#/components/examples/UpdatePipelineExamplesRedis"
+                },
+                "UpdatePipelineExamplesRegexExtract": {
+                  "$ref": "#/components/examples/UpdatePipelineExamplesRegexExtract"
+                },
+                "UpdatePipelineExamplesRegexFilter": {
+                  "$ref": "#/components/examples/UpdatePipelineExamplesRegexFilter"
+                },
+                "UpdatePipelineExamplesRename": {
+                  "$ref": "#/components/examples/UpdatePipelineExamplesRename"
+                },
+                "UpdatePipelineExamplesRollupMetrics": {
+                  "$ref": "#/components/examples/UpdatePipelineExamplesRollupMetrics"
+                },
+                "UpdatePipelineExamplesSampling": {
+                  "$ref": "#/components/examples/UpdatePipelineExamplesSampling"
+                },
+                "UpdatePipelineExamplesSerialize": {
+                  "$ref": "#/components/examples/UpdatePipelineExamplesSerialize"
+                },
+                "UpdatePipelineExamplesSNMPTrapSerialize": {
+                  "$ref": "#/components/examples/UpdatePipelineExamplesSNMPTrapSerialize"
+                },
+                "UpdatePipelineExamplesSuppress": {
+                  "$ref": "#/components/examples/UpdatePipelineExamplesSuppress"
+                },
+                "UpdatePipelineExamplesTee": {
+                  "$ref": "#/components/examples/UpdatePipelineExamplesTee"
+                },
+                "UpdatePipelineExamplesUnroll": {
+                  "$ref": "#/components/examples/UpdatePipelineExamplesUnroll"
+                },
+                "UpdatePipelineExamplesXMLUnroll": {
+                  "$ref": "#/components/examples/UpdatePipelineExamplesXMLUnroll"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "The <code>id</code> of the Pipeline to update."
+          }
+        ]
+      }
+    },
+    "/routes": {
+      "get": {
+        "operationId": "getRoutes",
+        "tags": [
+          "routes"
+        ],
+        "x-speakeasy-group": "routes",
+        "x-speakeasy-name-override": "list",
+        "x-cribl-internal": false,
+        "x-cribl-availability": "both",
+        "summary": "List all Routes",
+        "description": "Get a list of all Routes.",
+        "responses": {
+          "200": {
+            "description": "a list of Routes objects",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CountedRoutes"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication failed (missing or invalid credentials or Bearer token)."
+          },
+          "500": {
+            "description": "Unexpected server error.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/routes/{id}": {
+      "get": {
+        "operationId": "getRoutesById",
+        "tags": [
+          "routes"
+        ],
+        "x-speakeasy-group": "routes",
+        "x-speakeasy-name-override": "get",
+        "x-cribl-internal": false,
+        "x-cribl-availability": "both",
+        "summary": "Get a Routing table",
+        "description": "Get the specified Routing table.",
+        "responses": {
+          "200": {
+            "description": "a list of Routes objects",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CountedRoutes"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication failed (missing or invalid credentials or Bearer token)."
+          },
+          "500": {
+            "description": "Unexpected server error.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "The <code>id</code> of the Routing table to get. The supported value is <code>default</code>."
+          }
+        ]
+      },
+      "patch": {
+        "operationId": "updateRoutesById",
+        "tags": [
+          "routes"
+        ],
+        "x-speakeasy-group": "routes",
+        "x-speakeasy-name-override": "update",
+        "x-cribl-internal": false,
+        "x-cribl-availability": "both",
+        "summary": "Update a Route",
+        "description": "Update a Route in the specified Routing table.<br/><br/>\\1 This endpoint does not support partial updates. Cribl removes any omitted fields when updating the Routing table.<br/><br/>Confirm that the configuration in your request body is correct before sending the request. If the configuration is incorrect, the updated Routing table might not function as expected.<br/><br/>Cribl also removes any omitted Routes when updating the Routing table.",
+        "responses": {
+          "200": {
+            "description": "a list of Routes objects",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CountedRoutes"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication failed (missing or invalid credentials or Bearer token)."
+          },
+          "500": {
+            "description": "Unexpected server error.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "description": "RoutesInput object.",
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RoutesInput"
+              },
+              "examples": {
+                "RoutesUpdateExamplesBasicRoute": {
+                  "$ref": "#/components/examples/RoutesUpdateExamplesBasicRoute"
+                },
+                "RoutesUpdateExamplesMultipleRoutes": {
+                  "$ref": "#/components/examples/RoutesUpdateExamplesMultipleRoutes"
+                },
+                "RoutesUpdateExamplesRouteWithOutputExpression": {
+                  "$ref": "#/components/examples/RoutesUpdateExamplesRouteWithOutputExpression"
+                },
+                "RoutesUpdateExamplesRouteWithDefaults": {
+                  "$ref": "#/components/examples/RoutesUpdateExamplesRouteWithDefaults"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "The <code>id</code> of the Routing table that contains the Route to update. The supported value is <code>default</code>."
+          }
+        ]
+      }
+    },
+    "/functions": {
+      "get": {
+        "operationId": "getFunctions",
+        "tags": [
+          "functions"
+        ],
+        "x-speakeasy-group": "functions",
+        "x-speakeasy-name-override": "list",
+        "x-cribl-internal": false,
+        "x-cribl-availability": "both",
+        "summary": "List all Functions",
+        "description": "Get a list of all Functions.",
+        "responses": {
+          "200": {
+            "description": "a list of Function objects",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CountedFunctionResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication failed (missing or invalid credentials or Bearer token)."
+          },
+          "500": {
+            "description": "Unexpected server error.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,19 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>cribl-studio</title>
+  </head>
+  <body>
+    <div id="root"></div>
+    <!-- Load esbuild-wasm as a real module script so the import resolves against the
+         document URL (not the null origin). This is the only approach that works in
+         Cribl's null-origin sandboxed iframe — programmatic import() of blob:null/
+         URLs is hard-blocked by Chrome/Safari. The script lives in public/ so Vite
+         does not try to resolve its imports during the build. -->
+    <script type="module" src="/esbuild-loader.js"></script>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>
