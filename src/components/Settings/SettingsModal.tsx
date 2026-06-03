@@ -16,12 +16,8 @@ const BEDROCK_REGIONS = [
 ];
 
 export function SettingsModal({ initialSettings, onClose }: Props) {
-  const [provider, setProvider] = useState<AIProvider>(
-    (initialSettings.provider === 'aperture' ? 'anthropic' : initialSettings.provider) ?? 'anthropic'
-  );
-  const [model, setModel] = useState(
-    initialSettings.provider === 'aperture' ? DEFAULT_ANTHROPIC_MODEL : (initialSettings.model ?? DEFAULT_ANTHROPIC_MODEL)
-  );
+  const [provider, setProvider] = useState<AIProvider>(initialSettings.provider ?? 'anthropic');
+  const [model, setModel] = useState(initialSettings.model ?? DEFAULT_ANTHROPIC_MODEL);
   const [anthropicApiKey, setAnthropicApiKey] = useState(initialSettings.anthropicApiKey ?? '');
   const [bedrockRegion, setBedrockRegion] = useState(initialSettings.bedrockRegion ?? 'us-east-1');
   const [bedrockAccessKeyId, setBedrockAccessKeyId] = useState(initialSettings.bedrockAccessKeyId ?? '');
