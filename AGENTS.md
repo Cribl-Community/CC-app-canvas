@@ -192,3 +192,73 @@ Your app runs in a sandboxed iframe, so to leave the app, set `target="_top"` (c
 
 **Live preview (`npm run dev`):** absolute paths resolve against your dev server, not the Leader UI, so `target="_top"` won't reach Cribl. Test those in installed mode.
 
+
+
+# Cribl Log Search App — Developer Notes
+
+## Cribl Search API — Key Lessons Learned
+
+### Base URLs
+All search endpoints MUST use the `/m/default_search/` prefix:
+```
+const BASE = `${window.CRIBL_API_URL}/m/default_search`;
+```
+
+### Correct Endpoints
+| Action | Method | URL |
+|---|---|---|
+| Create job | POST | `/api/v1/m/default_search/search/jobs` |
+| Poll job status | GET | `/api/v1/m/default_search/search/jobs/{id}` |
+| Fetch results | GET | `/api/v1/m/default_search/search/jobs/{id}/results` |
+| Cancel job | PATCH | `/api/v1/m/default_search/search/jobs/{id}` |
+
+**❌ `/events` is NOT a valid endpoint — use `/results`**
+**❌ Never omit `/m/default_search/` — you will get 404s**
+
+### Request Body for Creating a Job
+- `query` must be a **plain string**, not an object
+- Time format must be Cribl relative time format e.g. `-1h@h`, `-15m@m`, `-7d@d` — NOT `now-1h` or ISO strings
+
+```json
+{
+  "query": "dataset=\"cribl_search_sample\" | take 100",
+  "earliest": "-1h@h",
+  "latest": "now"
+}
+```
+
+### Response Parsing
+- Job status is at `data.items[0]`
+- Results endpoint returns **NDJSON** (newline-delimited JSON) — do NOT use `res.json()`, use `res.text()` and split by newline
+- Each line may be wrapped as `{ result: { ...row } }` or a raw object
+
+### Job Status Polling
+Poll until status is one of these terminal states:
+- `completed` — fetch results
+- `failed`, `cancelled`, `timedout`, `expired` — show error
+
+### Time Format
+Cribl requires its own relative time format:
+| UI Label | earliest | latest |
+|---|---|---|
+| Last 5 min | `-5m@m` | `now` |
+| Last 15 min | `-15m@m` | `now` |
+| Last 1 hour | `-1h@h` | `now` |
+| Last 4 hours | `-4h@h` | `now` |
+| Last 24 hours | `-24h@h` | `now` |
+| Last 7 days | `-7d@d` | `now` |
+
+### URL Construction
+- Use plain string concatenation — do NOT use `new URL(path, base)` as `CRIBL_API_URL` may be a relative path and will throw `Invalid base URL`
+
+### Default Query
+```
+dataset="cribl_search_sample" | take 100
+```
+
+## General Development Rules
+- When fixing a bug, **only output the file(s) that actually changed**
+- Do not re-output all files for a single-file fix
+- Do not change UI/styling when fixing logic bugs
+- Do not change time selectors, colors, or layout unless explicitly asked
+

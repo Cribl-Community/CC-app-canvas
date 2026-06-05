@@ -1,11 +1,14 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import MonacoEditor from '@monaco-editor/react';
 import type { ProjectFiles } from '../../types';
 import { FileTreePanel } from './FileTreePanel';
+import '../../lib/monacoSetup';
 
 interface Props {
   files: ProjectFiles;
   onFileChange: (path: string, content: string) => void;
+  onBuild: () => void;
+  buildError: string;
 }
 
 function getLanguage(path: string): string {
@@ -20,10 +23,33 @@ function getLanguage(path: string): string {
   return map[ext] ?? 'plaintext';
 }
 
-export function EditorPanel({ files, onFileChange }: Props) {
+export function EditorPanel({ files, onFileChange, onBuild, buildError }: Props) {
   const [activeFile, setActiveFile] = useState<string | null>(
     () => Object.keys(files)[0] ?? null,
   );
+  const [errorDismissed, setErrorDismissed] = useState(false);
+  const [buildSuccess, setBuildSuccess] = useState(false);
+
+  // When a new error arrives, un-dismiss so it re-shows
+  useEffect(() => {
+    if (buildError) setErrorDismissed(false);
+  }, [buildError]);
+
+  const handleBuild = () => {
+    setBuildSuccess(false);
+    onBuild();
+  };
+
+  // Show success badge when error clears after a build
+  useEffect(() => {
+    if (buildError === '') {
+      setBuildSuccess(true);
+      const t = setTimeout(() => setBuildSuccess(false), 3000);
+      return () => clearTimeout(t);
+    }
+  }, [buildError]);
+
+  const showErrorPanel = !!buildError && !errorDismissed;
 
   const content = activeFile ? (files[activeFile] ?? '') : '';
 
@@ -42,6 +68,13 @@ export function EditorPanel({ files, onFileChange }: Props) {
             <div className="editor-tab-bar">
               <span className="editor-tab active">{activeFile.split('/').pop()}</span>
               <span className="editor-tab-path">{activeFile}</span>
+              <div className="editor-tab-spacer" />
+              <button className="build-btn" onClick={handleBuild} title="Build and refresh preview">
+                ▶ Build
+              </button>
+              {buildSuccess && !buildError && (
+                <span className="build-success-badge">✓ Built</span>
+              )}
             </div>
             <div className="editor-monaco">
               <MonacoEditor
@@ -65,6 +98,19 @@ export function EditorPanel({ files, onFileChange }: Props) {
                 }}
               />
             </div>
+            {showErrorPanel && (
+              <div className="editor-error-panel">
+                <div className="editor-error-header">
+                  <span className="editor-error-title">● Build error</span>
+                  <button
+                    className="icon-btn-sm"
+                    title="Dismiss"
+                    onClick={() => setErrorDismissed(true)}
+                  >✕</button>
+                </div>
+                <pre className="editor-error-text">{buildError}</pre>
+              </div>
+            )}
           </>
         ) : (
           <div className="editor-empty">Select a file to edit</div>

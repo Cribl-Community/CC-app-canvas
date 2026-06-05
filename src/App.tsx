@@ -4,9 +4,9 @@ import type { ChatMessage, ProjectFiles, ProjectMeta, Settings } from './types';
 import { streamAI, parseAIResponse } from './lib/ai';
 import {
   listProjectMetas, loadMessages, saveMessages, loadProjectFiles,
-  saveFile, saveProjectMeta, deleteProject, loadSettings, saveSettings,
+  saveFile, saveProjectFiles, saveProjectMeta, deleteProject, loadSettings, saveSettings,
 } from './lib/kvstore';
-import { buildCrbl } from './lib/packager';
+import { buildCrbl, buildSourceTgz } from './lib/packager';
 import { SAMPLE_APP_FILES, SAMPLE_APP_NAME } from './lib/sampleApp';
 import { ProjectSidebar } from './components/Sidebar/ProjectSidebar';
 import { ChatPanel } from './components/Chat/ChatPanel';
@@ -25,26 +25,10 @@ export default function App() {
   const [previewTrigger, setPreviewTrigger] = useState(0);
   const [showEditor, setShowEditor] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
-  const [settings, setSettings] = useState<Partial<Settings>>(() => {
-    const key = 'cribl-vibe-coder:settings';
-    // Try every synchronous store in priority order (window.name works in any sandbox)
-    const sources: Array<() => string | null> = [
-      () => { try { const b = JSON.parse(window.name) as Record<string,unknown>; const v = b[key]; return v ? JSON.stringify(v) : null; } catch { return null; } },
-      () => { try { return sessionStorage.getItem(key); } catch { return null; } },
-      () => { try { return localStorage.getItem(key); } catch { return null; } },
-    ];
-    for (const read of sources) {
-      try {
-        const raw = read();
-        if (raw) {
-          const parsed = JSON.parse(raw) as Partial<Settings>;
-          if (parsed && Object.keys(parsed).length > 0) return parsed;
-        }
-      } catch { /* ignore */ }
-    }
-    return { provider: 'anthropic', model: 'claude-sonnet-4-5' };
-  });
+  const [settings, setSettings] = useState<Partial<Settings>>({ provider: 'anthropic', model: 'claude-sonnet-4-5' });
   const [downloading, setDownloading] = useState(false);
+  const [downloadingSource, setDownloadingSource] = useState(false);
+  const [buildError, setBuildError] = useState('');
   const [chatWidthPct, setChatWidthPct] = useState(40);
   const abortRef = useRef<AbortController | null>(null);
   const mainAreaRef = useRef<HTMLDivElement>(null);
@@ -122,7 +106,7 @@ export default function App() {
     setFiles(SAMPLE_APP_FILES);
     setPreviewTrigger(t => t + 1);
     handleRenameProject(id, SAMPLE_APP_NAME);
-    Object.entries(SAMPLE_APP_FILES).forEach(([path, content]) => saveFile(id, path, content));
+    saveProjectFiles(id, SAMPLE_APP_FILES);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -154,8 +138,12 @@ export default function App() {
     if (activeProjectId) {
       saveFile(activeProjectId, path, content);
     }
-    setPreviewTrigger(t => t + 1);
+    // No auto-rebuild — user clicks Build explicitly
   }, [activeProjectId]);
+
+  const handleBuild = useCallback(() => {
+    setPreviewTrigger(t => t + 1);
+  }, []);
 
   const handleSend = useCallback(async (text: string) => {
     if (isStreaming) return;
@@ -241,10 +229,8 @@ export default function App() {
         setFiles(mergedFiles);
         setPreviewTrigger(t => t + 1);
 
-        // Persist each file
-        for (const [path, content] of Object.entries(newFiles)) {
-          await saveFile(projectId, path, content);
-        }
+        // Save all merged files in a single KV write to avoid race conditions
+        await saveProjectFiles(projectId, mergedFiles);
       }
 
       await saveMessages(projectId, finalMessages);
@@ -260,6 +246,15 @@ export default function App() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeProjectId, isStreaming, messages, files, settings, projects]);
 
+  const triggerDownload = (blob: Blob, filename: string) => {
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
   const handleDownload = async () => {
     if (downloading || Object.keys(files).length === 0) return;
     const meta = projects.find(p => p.id === activeProjectId);
@@ -268,16 +263,28 @@ export default function App() {
     setDownloading(true);
     try {
       const blob = await buildCrbl(meta, files);
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `${meta.name.toLowerCase().replace(/[^a-z0-9-]/g, '-')}.crbl`;
-      a.click();
-      URL.revokeObjectURL(url);
+      triggerDownload(blob, `${meta.name.toLowerCase().replace(/[^a-z0-9-]/g, '-')}.tgz`);
     } catch (e) {
       console.error('Download failed:', e);
     } finally {
       setDownloading(false);
+    }
+  };
+
+  const handleDownloadSource = async () => {
+    if (downloadingSource || Object.keys(files).length === 0) return;
+    const meta = projects.find(p => p.id === activeProjectId);
+    if (!meta) return;
+
+    setDownloadingSource(true);
+    try {
+      const blob = await buildSourceTgz(meta, files);
+      const slug = meta.name.toLowerCase().replace(/[^a-z0-9-]/g, '-');
+      triggerDownload(blob, `${slug}-source.tgz`);
+    } catch (e) {
+      console.error('Source download failed:', e);
+    } finally {
+      setDownloadingSource(false);
     }
   };
 
@@ -288,7 +295,7 @@ export default function App() {
     <div className="app-shell">
       <header className="app-header">
         <div className="header-left">
-          <span className="app-logo">⚡ Vibe Coder</span>
+          <span className="app-logo">⚡ Cribl Studio</span>
           {activeProject && (
             <span className="project-name">{activeProject.name}</span>
           )}
@@ -305,9 +312,17 @@ export default function App() {
             className="header-btn"
             onClick={handleDownload}
             disabled={downloading || fileCount === 0}
-            title="Download .crbl package"
+            title="Download deployable Cribl app (.tgz)"
           >
-            {downloading ? '⏳' : '↓'} .crbl
+            {downloading ? '⏳' : '↓'} .tgz
+          </button>
+          <button
+            className="header-btn"
+            onClick={handleDownloadSource}
+            disabled={downloadingSource || fileCount === 0}
+            title="Download raw source files (npm install && npm run dev)"
+          >
+            {downloadingSource ? '⏳' : '↓'} Source
           </button>
           <button
             className="header-btn"
@@ -360,10 +375,19 @@ export default function App() {
           <div className={`right-pane ${showEditor ? 'with-editor' : ''}`}>
             {showEditor && (
               <div className="editor-column">
-                <EditorPanel files={files} onFileChange={handleFileChange} />
+                <EditorPanel
+                  files={files}
+                  onFileChange={handleFileChange}
+                  onBuild={handleBuild}
+                  buildError={buildError}
+                />
               </div>
             )}
-            <PreviewPanel files={files} trigger={previewTrigger} />
+            <PreviewPanel
+              files={files}
+              trigger={previewTrigger}
+              onBuildResult={setBuildError}
+            />
           </div>
         </main>
       </div>

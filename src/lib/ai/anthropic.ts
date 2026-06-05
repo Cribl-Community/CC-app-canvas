@@ -3,11 +3,12 @@ import { SYSTEM_PROMPT } from './prompts';
 
 export const ANTHROPIC_MODELS = [
   { id: 'claude-opus-4-5', label: 'Claude Opus 4.5' },
+  { id: 'claude-sonnet-4-6', label: 'Claude Sonnet 4.6' },
   { id: 'claude-sonnet-4-5', label: 'Claude Sonnet 4.5' },
   { id: 'claude-haiku-3-5', label: 'Claude Haiku 3.5' },
 ];
 
-export const DEFAULT_ANTHROPIC_MODEL = 'claude-sonnet-4-5';
+export const DEFAULT_ANTHROPIC_MODEL = 'claude-sonnet-4-6';
 
 interface AnthropicMessage {
   role: 'user' | 'assistant';

@@ -5,6 +5,7 @@ import { bundleFiles } from '../../lib/bundler/esbuild';
 interface Props {
   files: ProjectFiles;
   trigger: number; // increment to force rebundle
+  onBuildResult?: (error: string) => void;
 }
 
 // postMessage bridge: relay fetch requests from the preview iframe through
@@ -37,7 +38,7 @@ function useFetchBridge() {
   }, []);
 }
 
-export function PreviewPanel({ files, trigger }: Props) {
+export function PreviewPanel({ files, trigger, onBuildResult }: Props) {
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const fullscreenIframeRef = useRef<HTMLIFrameElement>(null);
   const [status, setStatus] = useState<'idle' | 'bundling' | 'ready' | 'error'>('idle');
@@ -70,6 +71,7 @@ export function PreviewPanel({ files, trigger }: Props) {
       if (bundleError) {
         setStatus('error');
         setError(bundleError);
+        onBuildResult?.(bundleError);
         return;
       }
 
@@ -79,6 +81,7 @@ export function PreviewPanel({ files, trigger }: Props) {
       if (fullscreenIframeRef.current) fullscreenIframeRef.current.srcdoc = html;
 
       setStatus('ready');
+      onBuildResult?.('');
     });
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [trigger]);
