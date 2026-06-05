@@ -1,7 +1,7 @@
 import { useState, useCallback, useRef, useEffect, type MouseEvent as ReactMouseEvent } from 'react';
 import { v4 as uuidv4 } from 'uuid';
-import type { ChatMessage, ProjectFiles, ProjectMeta, Settings, ToolExecutor } from './types';
-import { streamAI } from './lib/ai';
+import type { ChatMessage, ProjectFiles, ProjectMeta, Settings } from './types';
+import { streamAI, parseAIResponse } from './lib/ai';
 import {
   listProjectMetas, loadMessages, saveMessages, loadProjectFiles,
   saveFile, saveProjectFiles, saveProjectMeta, deleteProject, loadSettings, saveSettings,
@@ -165,65 +165,51 @@ export default function App() {
     setStreamingText('');
     setStreamingRaw('');
 
+    // Save user message
     await saveMessages(projectId, nextMessages);
 
+    // Auto-name the project from the first message
     if (messages.length === 0) {
       const shortName = text.slice(0, 40) + (text.length > 40 ? '…' : '');
       handleRenameProject(projectId, shortName);
     }
 
     abortRef.current = new AbortController();
-    let narrativeText = '';
+    let accumulated = '';
     let hasError = false;
 
-    // Local mutable snapshot of files — updated in-place as write_file calls arrive.
-    // Using a plain object (not setState) so the toolExecutor always sees the latest
-    // writes from earlier tool calls within the same streaming session.
-    let currentFiles = { ...files };
-    const writtenFiles: string[] = [];
-
-    const toolExecutor: ToolExecutor = async (name, input) => {
-      if (name === 'write_file') {
-        const path = input.path as string;
-        const content = input.content as string;
-        currentFiles = { ...currentFiles, [path]: content };
-        writtenFiles.push(path);
-        setFiles({ ...currentFiles });
-        return `Successfully wrote ${path}`;
-      }
-      if (name === 'read_file') {
-        const path = input.path as string;
-        const content = currentFiles[path];
-        return content !== undefined ? content : `File not found: ${path}`;
-      }
-      if (name === 'list_files') {
-        const paths = Object.keys(currentFiles);
-        return paths.length > 0 ? paths.join('\n') : 'No files in project yet';
-      }
-      return `Unknown tool: ${name}`;
-    };
-
     try {
-      const stream = streamAI(nextMessages, settings, abortRef.current.signal, toolExecutor);
+      // On follow-up messages, inject the current file contents into the last user
+      // message so the AI works from the real live code rather than reconstructing
+      // from its memory of what it previously generated.
+      let aiMessages = nextMessages;
+      if (messages.length > 0 && Object.keys(files).length > 0) {
+        const fileContext = Object.entries(files)
+          .map(([path, content]) => `<file path="${path}">\n${content}\n</file>`)
+          .join('\n');
+        const lastMsg = nextMessages[nextMessages.length - 1];
+        aiMessages = [
+          ...nextMessages.slice(0, -1),
+          {
+            ...lastMsg,
+            content: `[Current file contents — work from these exactly, do not reimagine them]\n${fileContext}\n[End file contents]\n\n${lastMsg.content}`,
+          },
+        ];
+      }
+
+      const stream = streamAI(aiMessages, settings, abortRef.current.signal);
 
       for await (const chunk of stream) {
         if (chunk.type === 'text' && chunk.text) {
-          narrativeText += chunk.text;
-          setStreamingText(narrativeText);
-          setStreamingRaw(narrativeText);
-        } else if (chunk.type === 'tool_call') {
-          if (!chunk.toolDone && chunk.toolName === 'write_file') {
-            // Open a fake file block so ChatPanel's streaming display shows activity
-            const path = (chunk.toolInput?.path as string) ?? chunk.toolName;
-            setStreamingRaw(prev => prev + `\n<file path="${path}">`);
-          } else if (chunk.toolDone && chunk.toolName === 'write_file') {
-            setStreamingRaw(prev => prev + `</file>`);
-            setPreviewTrigger(t => t + 1);
-          }
+          accumulated += chunk.text;
+          // Show narrative text (strip file blocks from display)
+          const { text: displayText } = parseAIResponse(accumulated);
+          setStreamingText(displayText);
+          setStreamingRaw(accumulated);
         } else if (chunk.type === 'error') {
           hasError = true;
-          narrativeText = `Error: ${chunk.error}`;
-          setStreamingText(narrativeText);
+          accumulated = `Error: ${chunk.error}`;
+          setStreamingText(accumulated);
           break;
         } else if (chunk.type === 'done') {
           break;
@@ -231,17 +217,21 @@ export default function App() {
       }
     } catch (e) {
       if ((e as Error).name !== 'AbortError') {
-        narrativeText = `Error: ${String(e)}`;
+        accumulated = `Error: ${String(e)}`;
         hasError = true;
-        setStreamingText(narrativeText);
+        setStreamingText(accumulated);
       }
     }
+
+    // Parse files from the full response
+    const { text: displayText, files: newFiles } = parseAIResponse(accumulated);
 
     const assistantMsg: ChatMessage = {
       id: uuidv4(),
       role: 'assistant',
-      content: narrativeText,
-      files: writtenFiles,
+      content: displayText || accumulated,
+      files: Object.keys(newFiles),
+      rawContent: accumulated,
     };
 
     const finalMessages = [...nextMessages, assistantMsg];
@@ -251,12 +241,19 @@ export default function App() {
     setIsStreaming(false);
 
     if (!hasError) {
-      if (writtenFiles.length > 0) {
-        await saveProjectFiles(projectId, currentFiles);
+      // Merge new files into the project
+      if (Object.keys(newFiles).length > 0) {
+        const mergedFiles = { ...files, ...newFiles };
+        setFiles(mergedFiles);
+        setPreviewTrigger(t => t + 1);
+
+        // Save all merged files in a single KV write to avoid race conditions
+        await saveProjectFiles(projectId, mergedFiles);
       }
 
       await saveMessages(projectId, finalMessages);
 
+      // Update project timestamp
       const meta = projects.find(p => p.id === projectId);
       if (meta) {
         const updated = { ...meta, updatedAt: Date.now() };
