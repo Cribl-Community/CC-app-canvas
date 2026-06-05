@@ -38,8 +38,16 @@ export interface Project {
 }
 
 export interface StreamChunk {
-  type: 'text' | 'file_start' | 'file_content' | 'file_end' | 'done' | 'error';
+  type: 'text' | 'tool_call' | 'done' | 'error';
   text?: string;
-  path?: string;
   error?: string;
+  /** Tool call details (type === 'tool_call') */
+  toolId?: string;
+  toolName?: string;
+  toolInput?: Record<string, unknown>;
+  /** True when the tool has finished executing and a result was sent back */
+  toolDone?: boolean;
 }
+
+/** Callback that App.tsx provides to execute tool calls during the agentic loop */
+export type ToolExecutor = (name: string, input: Record<string, unknown>) => Promise<string>;

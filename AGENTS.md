@@ -67,6 +67,34 @@ Each app has a scoped KV store. Use `CRIBL_API_URL` as the base — the proxy ha
 | Delete | DELETE | `CRIBL_API_URL + '/kvstore/the/path/to/key'` | — |
 | List keys | POST | `CRIBL_API_URL + '/kvstore/keys'` | `{ prefix: 'my/key/prefix' }` |
 
+#### Serialization — CRITICAL
+
+The Cribl fetch proxy re-serializes request bodies when `Content-Type: application/json` is set, which **corrupts objects** (they arrive on the server as the string `"[object Object]"`). You **must** follow this pattern for all KV writes and reads:
+
+**Writing (PUT):**
+```typescript
+await fetch(`${CRIBL_API_URL}/kvstore/my/key`, {
+  method: 'PUT',
+  headers: { 'Content-Type': 'text/plain' },  // NOT application/json
+  body: JSON.stringify(myObject),              // always serialize to string first
+});
+```
+
+**Reading (GET):**
+```typescript
+const res = await fetch(`${CRIBL_API_URL}/kvstore/my/key`);
+if (res.ok) {
+  const text = await res.text();              // read as text first
+  const myObject = JSON.parse(text);          // then parse
+}
+```
+
+**Rules:**
+- Always use `Content-Type: text/plain` for KV PUT requests — never `application/json`.
+- Always call `JSON.stringify(value)` before writing any object or array.
+- Always call `res.text()` then `JSON.parse(text)` when reading — never `res.json()`.
+- Strings can be written as-is without `JSON.stringify`, but wrapping them is harmless and consistent.
+
 ### Config Group Context
 
 Cribl REST API endpoints that don't begin with `/system/` are contextual and can be called in the context of a config group using the prefix `/m/:groupId`. Config groups can be listed using the `/master/groups` endpoint.
