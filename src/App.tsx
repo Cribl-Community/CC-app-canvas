@@ -179,7 +179,25 @@ export default function App() {
     let hasError = false;
 
     try {
-      const stream = streamAI(nextMessages, settings, abortRef.current.signal);
+      // On follow-up messages, inject the current file contents into the last user
+      // message so the AI works from the real live code rather than reconstructing
+      // from its memory of what it previously generated.
+      let aiMessages = nextMessages;
+      if (messages.length > 0 && Object.keys(files).length > 0) {
+        const fileContext = Object.entries(files)
+          .map(([path, content]) => `<file path="${path}">\n${content}\n</file>`)
+          .join('\n');
+        const lastMsg = nextMessages[nextMessages.length - 1];
+        aiMessages = [
+          ...nextMessages.slice(0, -1),
+          {
+            ...lastMsg,
+            content: `[Current file contents — work from these exactly, do not reimagine them]\n${fileContext}\n[End file contents]\n\n${lastMsg.content}`,
+          },
+        ];
+      }
+
+      const stream = streamAI(aiMessages, settings, abortRef.current.signal);
 
       for await (const chunk of stream) {
         if (chunk.type === 'text' && chunk.text) {

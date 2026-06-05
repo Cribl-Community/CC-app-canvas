@@ -40,7 +40,7 @@ function parseStreamingDisplay(raw: string): StreamingDisplay {
   return { narrativeText: text.trim(), completedFiles, activeFile };
 }
 
-export function ChatPanel({ messages, streamingText, streamingRaw, isStreaming, onSend, hasProject }: Props) {
+export function ChatPanel({ messages, streamingText, streamingRaw, isStreaming, onSend }: Props) {
   const bottomRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -50,7 +50,7 @@ export function ChatPanel({ messages, streamingText, streamingRaw, isStreaming, 
   return (
     <div className="chat-panel">
       <div className="chat-messages">
-        {!hasProject && messages.length === 0 && (
+        {messages.length === 0 && (
           <div className="chat-welcome">
             <div className="chat-welcome-icon">⚡</div>
             <h2>Cribl Studio</h2>
