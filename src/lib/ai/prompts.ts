@@ -1,7 +1,7 @@
 import agentsMd from '../../../AGENTS.md?raw';
 import openApiCurated from '../../openapi-curated.json';
 
-const OPENAPI_SUMMARY = JSON.stringify(openApiCurated, null, 2).slice(0, 24000);
+const OPENAPI_SUMMARY = JSON.stringify(openApiCurated, null, 2);
 
 export const SYSTEM_PROMPT = `You are an expert Cribl App Platform developer and AI assistant embedded inside a live browser-based Cribl app builder called Cribl Studio. Your job is to help users design and build complete, working Cribl apps from natural language descriptions.
 

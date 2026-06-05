@@ -1,5 +1,6 @@
 import type { ProjectFiles, ProjectMeta } from '../types';
 import { bundleFiles } from './bundler/esbuild';
+import openApiCurated from '../openapi-curated.json';
 
 const CRIBL_CREATE_APP_SCRIPT_VERSION = '0.1.0';
 
@@ -282,6 +283,9 @@ npm install
 npm run dev
 \`\`\`
 `);
+
+  // ── openapi.json — Cribl REST API spec for AI coding tools ───────────────
+  tar.addFile('openapi.json', JSON.stringify(openApiCurated, null, 2));
 
   // ── Generated source files ────────────────────────────────────────────────
   for (const [path, content] of Object.entries(files)) {

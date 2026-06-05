@@ -54,7 +54,7 @@ Proxied requests time out after **30 seconds** if no response is received. Use `
 
 ## Platform APIs
 
-API endpoint definitions are available in `openapi.json` (if downloaded during project setup).
+API endpoint definitions are available in `openapi.json` at the project root.
 
 ### Key-Value Store
 
