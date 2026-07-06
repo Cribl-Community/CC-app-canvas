@@ -27,13 +27,8 @@ export function EditorPanel({ files, onFileChange, onBuild, buildError }: Props)
   const [activeFile, setActiveFile] = useState<string | null>(
     () => Object.keys(files)[0] ?? null,
   );
-  const [errorDismissed, setErrorDismissed] = useState(false);
+  const [dismissedError, setDismissedError] = useState<string | null>(null);
   const [buildSuccess, setBuildSuccess] = useState(false);
-
-  // When a new error arrives, un-dismiss so it re-shows
-  useEffect(() => {
-    if (buildError) setErrorDismissed(false);
-  }, [buildError]);
 
   const handleBuild = () => {
     setBuildSuccess(false);
@@ -43,13 +38,13 @@ export function EditorPanel({ files, onFileChange, onBuild, buildError }: Props)
   // Show success badge when error clears after a build
   useEffect(() => {
     if (buildError === '') {
-      setBuildSuccess(true);
-      const t = setTimeout(() => setBuildSuccess(false), 3000);
-      return () => clearTimeout(t);
+      const t1 = setTimeout(() => setBuildSuccess(true), 0);
+      const t2 = setTimeout(() => setBuildSuccess(false), 3000);
+      return () => { clearTimeout(t1); clearTimeout(t2); };
     }
   }, [buildError]);
 
-  const showErrorPanel = !!buildError && !errorDismissed;
+  const showErrorPanel = !!buildError && buildError !== dismissedError;
 
   const content = activeFile ? (files[activeFile] ?? '') : '';
 
@@ -105,7 +100,7 @@ export function EditorPanel({ files, onFileChange, onBuild, buildError }: Props)
                   <button
                     className="icon-btn-sm"
                     title="Dismiss"
-                    onClick={() => setErrorDismissed(true)}
+                    onClick={() => setDismissedError(buildError)}
                   >✕</button>
                 </div>
                 <pre className="editor-error-text">{buildError}</pre>

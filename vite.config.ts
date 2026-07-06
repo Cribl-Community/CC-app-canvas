@@ -3,7 +3,7 @@ import type { IncomingMessage, ServerResponse } from 'node:http'
 import { readFileSync } from 'node:fs'
 import { join } from 'path'
 import react from '@vitejs/plugin-react'
-// @ts-ignore
+// @ts-expect-error – no type declarations for this local mjs script
 import { servePackageTgz } from './scripts/pkgutil.mjs'
 
 const packageEndpointPlugin = () => ({

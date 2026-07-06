@@ -50,7 +50,7 @@ export function PreviewPanel({ files, trigger, onBuildResult }: Props) {
 
   // Snapshot CRIBL_API_URL from this frame (set by the Cribl platform) so we
   // can inline it into the preview srcdoc without needing cross-frame access.
-  const criblApiUrl = (window as any).CRIBL_API_URL ?? '/api/v1';
+  const criblApiUrl = (window as Window & { CRIBL_API_URL?: string }).CRIBL_API_URL ?? '/api/v1';
 
   // Serve Tailwind from our own origin so the srcdoc <script> tag never makes an
   // external CDN request (blocked by Cribl's CSP on staging).
@@ -58,14 +58,18 @@ export function PreviewPanel({ files, trigger, onBuildResult }: Props) {
   // (/app-ui/cribl-studio/) is included — concatenating origin + BASE_URL loses it.
   const tailwindUrl = new URL(`${import.meta.env.BASE_URL}vendor/tailwind.js`, window.location.href).href;
 
+  // Derive idle status from files to avoid calling setState synchronously in the effect
+  const displayStatus = Object.keys(files).length === 0 ? 'idle' : status;
+
   useEffect(() => {
     if (Object.keys(files).length === 0) {
-      setStatus('idle');
       return;
     }
 
-    setStatus('bundling');
-    setError('');
+    void Promise.resolve().then(() => {
+      setStatus('bundling');
+      setError('');
+    });
 
     bundleFiles(files).then(({ code, error: bundleError }) => {
       if (bundleError) {
@@ -105,9 +109,9 @@ export function PreviewPanel({ files, trigger, onBuildResult }: Props) {
   const toolbar = (isFullscreen: boolean) => (
     <div className="preview-toolbar">
       <span className="preview-title">Preview</span>
-      {status === 'bundling' && <span className="preview-status bundling">Building…</span>}
-      {status === 'ready' && <span className="preview-status ready">● Live</span>}
-      {status === 'error' && <span className="preview-status error">● Error</span>}
+      {displayStatus === 'bundling' && <span className="preview-status bundling">Building…</span>}
+      {displayStatus === 'ready' && <span className="preview-status ready">● Live</span>}
+      {displayStatus === 'error' && <span className="preview-status error">● Error</span>}
       <button
         className="icon-btn"
         title="Reload preview"
@@ -130,14 +134,14 @@ export function PreviewPanel({ files, trigger, onBuildResult }: Props) {
     <div className="preview-panel">
       {toolbar(false)}
 
-      {status === 'idle' && (
+      {displayStatus === 'idle' && (
         <div className="preview-empty">
           <div className="preview-empty-icon">👁</div>
           <p>Your app preview will appear here once the AI generates it.</p>
         </div>
       )}
 
-      {status === 'error' && (
+      {displayStatus === 'error' && (
         <div className="preview-error">
           <div className="preview-error-title">Build error</div>
           <pre className="preview-error-text">{error}</pre>
@@ -146,7 +150,7 @@ export function PreviewPanel({ files, trigger, onBuildResult }: Props) {
 
       <iframe
         ref={iframeRef}
-        className={`preview-iframe ${status === 'idle' || status === 'error' ? 'hidden' : ''}`}
+        className={`preview-iframe ${displayStatus === 'idle' || displayStatus === 'error' ? 'hidden' : ''}`}
         sandbox="allow-scripts allow-same-origin allow-forms allow-modals allow-popups"
         title="App Preview"
       />
@@ -156,13 +160,13 @@ export function PreviewPanel({ files, trigger, onBuildResult }: Props) {
       <div className="preview-fullscreen-backdrop" onClick={() => setFullscreen(false)}>
         <div className="preview-fullscreen-panel" onClick={e => e.stopPropagation()}>
           {toolbar(true)}
-          {status === 'idle' && (
+          {displayStatus === 'idle' && (
             <div className="preview-empty">
               <div className="preview-empty-icon">👁</div>
               <p>Your app preview will appear here once the AI generates it.</p>
             </div>
           )}
-          {status === 'error' && (
+          {displayStatus === 'error' && (
             <div className="preview-error">
               <div className="preview-error-title">Build error</div>
               <pre className="preview-error-text">{error}</pre>
@@ -170,7 +174,7 @@ export function PreviewPanel({ files, trigger, onBuildResult }: Props) {
           )}
           <iframe
             ref={fullscreenIframeRef}
-            className={`preview-iframe ${status === 'idle' || status === 'error' ? 'hidden' : ''}`}
+            className={`preview-iframe ${displayStatus === 'idle' || displayStatus === 'error' ? 'hidden' : ''}`}
             sandbox="allow-scripts allow-same-origin allow-forms allow-modals allow-popups"
             title="App Preview (fullscreen)"
           />

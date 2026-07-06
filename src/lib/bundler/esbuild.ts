@@ -26,7 +26,7 @@ async function ensureInitialized(): Promise<EsbuildModule> {
     // document URL (not the null origin), so it succeeds. Programmatic import() of blob:null/
     // URLs is blocked by Chrome/Safari in null-origin contexts.
     const esb = await new Promise<EsbuildModule>((resolve, reject) => {
-      const w = window as any;
+      const w = window as Window & { __criblStudioEsbuild?: EsbuildModule };
       if (w.__criblStudioEsbuild) {
         resolve(w.__criblStudioEsbuild);
         return;
@@ -103,11 +103,22 @@ export async function bundleFiles(files: ProjectFiles): Promise<{ code: string; 
   }
 }
 
+interface EsbuildPluginBuild {
+  onResolve: (
+    options: { filter: RegExp },
+    callback: (args: { path: string; importer: string; namespace: string }) => unknown,
+  ) => void;
+  onLoad: (
+    options: { filter: RegExp; namespace?: string },
+    callback: (args: { path: string }) => unknown,
+  ) => void;
+}
+
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function virtualFilePlugin(files: ProjectFiles): any {
   return {
     name: 'virtual-fs',
-    setup(build: any) {
+    setup(build: EsbuildPluginBuild) {
       // Resolve virtual files
       build.onResolve({ filter: /.*/ }, (args: { path: string; importer: string; namespace: string }) => {
         if (args.importer === '') {

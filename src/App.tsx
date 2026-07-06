@@ -101,6 +101,14 @@ export default function App() {
 
   const handleNewProject = () => createProject();
 
+  const handleRenameProject = async (id: string, name: string) => {
+    const meta = projects.find(p => p.id === id);
+    if (!meta) return;
+    const updated = { ...meta, name, updatedAt: Date.now() };
+    await saveProjectMeta(updated);
+    setProjects(prev => prev.map(p => p.id === id ? updated : p));
+  };
+
   const handleLoadSample = useCallback(() => {
     const id = createProject();
     setFiles(SAMPLE_APP_FILES);
@@ -123,14 +131,6 @@ export default function App() {
       setMessages([]);
       setFiles({});
     }
-  };
-
-  const handleRenameProject = async (id: string, name: string) => {
-    const meta = projects.find(p => p.id === id);
-    if (!meta) return;
-    const updated = { ...meta, name, updatedAt: Date.now() };
-    await saveProjectMeta(updated);
-    setProjects(prev => prev.map(p => p.id === id ? updated : p));
   };
 
   const handleFileChange = useCallback((path: string, content: string) => {
