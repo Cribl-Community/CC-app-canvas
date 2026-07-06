@@ -1,7 +1,7 @@
 {
-  "name": "cribl-studio",
+  "name": "app-canvas",
   "private": true,
-  "version": "1.0.26",
+  "version": "1.0.27",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -39,7 +39,7 @@
     "typescript-eslint": "^8.59.2",
     "vite": "^8.0.12"
   },
-  "displayName": "Cribl Studio",
+  "displayName": "App Canvas",
   "cribl": {
     "type": "app",
     "createAppScriptVersion": "0.1.0"

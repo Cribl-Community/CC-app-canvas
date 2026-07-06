@@ -53,7 +53,7 @@ export function ChatPanel({ messages, streamingText, streamingRaw, isStreaming, 
         {messages.length === 0 && (
           <div className="chat-welcome">
             <div className="chat-welcome-icon">⚡</div>
-            <h2>Cribl Studio</h2>
+            <h2>App Canvas</h2>
             <p>Describe a Cribl app and I'll build it for you in real time.</p>
             <div className="chat-suggestions">
               {SUGGESTIONS.map(s => (

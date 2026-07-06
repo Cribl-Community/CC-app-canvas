@@ -313,7 +313,7 @@ export default function App() {
     <div className="app-shell">
       <header className="app-header">
         <div className="header-left">
-          <span className="app-logo">⚡ Cribl Studio</span>
+          <span className="app-logo">🎨 App Canvas</span>
           {activeProject && (
             <span className="project-name">{activeProject.name}</span>
           )}
