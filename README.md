@@ -1,10 +1,10 @@
 # App Canvas
 
-App Canvas is an AI-powered builder for [apps] (https://docs.cribl.io/apps/) built on Cribl's platform. Describe what you want in plain English, and App Canvas generates a working React app — live in the preview — that you can download and install directly into Cribl.
+App Canvas is an AI-powered builder for [apps](https://docs.cribl.io/apps/) built on Cribl's platform. Describe what you want in plain English, and App Canvas generates a working React app — live in the preview — that you can download and install directly into Cribl.
 
 ## Installation
 
-1. Go to the latest [release] (https://github.com/Cribl-Community/CC-app-canvas/releases/latest).
+1. Go to the latest [release](https://github.com/Cribl-Community/CC-app-canvas/releases/latest).
 2. Under Assets, right click on the app .tgz file (the first entry) and copy the url.
 3. Log in to Cribl and then click on **Apps->View All**
 4. Click **Add App->Import from Url**.
