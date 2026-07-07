@@ -1,6 +1,6 @@
 # App Canvas
 
-App Canvas is an AI-powered builder for [Cribl App Platform](https://docs.cribl.io/stream/appplatform/) apps. Describe what you want in plain English, and App Canvas generates a working React app — live in the preview — that you can download and install directly into Cribl.
+App Canvas is an AI-powered builder for [apps] (https://docs.cribl.io/apps/) built on Cribl's platform. Describe what you want in plain English, and App Canvas generates a working React app — live in the preview — that you can download and install directly into Cribl.
 
 ## Installation
 
