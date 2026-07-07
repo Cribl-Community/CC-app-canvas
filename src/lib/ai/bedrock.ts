@@ -2,23 +2,44 @@ import type { ChatMessage, StreamChunk } from '../../types';
 import { SYSTEM_PROMPT } from './prompts';
 
 export const BEDROCK_MODELS = [
-  { id: 'anthropic.claude-opus-4-5-20251101-v1:0', label: 'Claude Opus 4.5 (Bedrock)' },
-  { id: 'anthropic.claude-sonnet-4-5-20251101-v1:0', label: 'Claude Sonnet 4.5 (Bedrock)' },
-  { id: 'anthropic.claude-haiku-3-5-20241022-v1:0', label: 'Claude Haiku 3.5 (Bedrock)' },
+  { id: 'us.anthropic.claude-opus-4-6-v1', label: 'Claude Opus 4.6 (Bedrock)' },
+  { id: 'us.anthropic.claude-sonnet-4-6', label: 'Claude Sonnet 4.6 (Bedrock)' },
+  { id: 'us.anthropic.claude-sonnet-4-5-20250929-v1:0', label: 'Claude Sonnet 4.5 (Bedrock)' },
+  { id: 'us.anthropic.claude-haiku-4-5-20251001-v1:0', label: 'Claude Haiku 4.5 (Bedrock)' },
 ];
 
-export const DEFAULT_BEDROCK_MODEL = 'anthropic.claude-sonnet-4-5-20251101-v1:0';
+export const DEFAULT_BEDROCK_MODEL = 'us.anthropic.claude-sonnet-4-6';
+
+function criblApiBase(): string {
+  return (window as unknown as { CRIBL_API_URL?: string }).CRIBL_API_URL ?? '/api/v1';
+}
+
+/**
+ * Write the SigV4 Authorization header value to KV so the Cribl proxy can inject it.
+ *
+ * The Cribl proxy always strips `Authorization` from outgoing requests (SSRF/auth
+ * isolation). The workaround: store the per-request signed value at KV key
+ * `bedrockAuth` immediately before the fetch, then let proxies.yml inject it via
+ * `Authorization: kv.bedrockAuth`. Written as a raw string (no JSON.stringify) so
+ * the proxy reads and injects the value verbatim.
+ */
+async function writeBedrockAuthToKv(authValue: string): Promise<void> {
+  await fetch(`${criblApiBase()}/kvstore/bedrockAuth`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'text/plain' },
+    body: authValue,
+  });
+}
 
 /**
  * Stream from AWS Bedrock (Anthropic Claude).
  *
- * Bedrock requires AWS SigV4 signing. Because the Cribl proxy strips the
- * standard `Authorization` header, we sign the request manually using the
- * AWS SDK (loaded lazily) and route the call through the platform proxy.
- *
- * The signed `Authorization` is passed in a custom header `x-cribl-aws-auth`
- * and the proxy renames it — OR the user can configure an API Gateway
- * endpoint with a static API key instead (see Settings > Bedrock mode).
+ * Bedrock requires AWS SigV4 signing. The Cribl proxy strips the standard
+ * `Authorization` header from all outgoing requests. To work around this, we:
+ *   1. Sign the request with SigV4 to obtain the Authorization value.
+ *   2. Write that value to KV key `bedrockAuth` immediately before fetching.
+ *   3. proxies.yml injects `Authorization: kv.bedrockAuth` on all Bedrock domains.
+ * All other SigV4 headers (x-amz-date, x-amz-content-sha256) are forwarded as-is.
  */
 export async function* streamBedrock(
   messages: ChatMessage[],
@@ -42,14 +63,52 @@ export async function* streamBedrock(
   let signedHeaders: Record<string, string>;
   try {
     const { SignatureV4 } = await import('@smithy/signature-v4');
-    const { Sha256 } = await import('@aws-crypto/sha256-js');
+
+    // @aws-crypto/sha256-js produces incorrect HMAC in certain browser
+    // environments. Use the browser's native Web Crypto API instead.
+    type SourceData = string | ArrayBuffer | ArrayBufferView;
+    class WebCryptoSha256 {
+      private key: Promise<CryptoKey> | null = null;
+      private chunks: Uint8Array[] = [];
+      constructor(secret?: SourceData) {
+        if (secret !== undefined) {
+          const raw: BufferSource =
+            typeof secret === 'string' ? new TextEncoder().encode(secret)
+            : ArrayBuffer.isView(secret) ? (secret as ArrayBufferView<ArrayBuffer>)
+            : secret as ArrayBuffer;
+          this.key = crypto.subtle.importKey('raw', raw, { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']);
+        }
+      }
+      update(data: SourceData): void {
+        const bytes: Uint8Array =
+          typeof data === 'string' ? new TextEncoder().encode(data)
+          : ArrayBuffer.isView(data) ? new Uint8Array((data as ArrayBufferView).buffer, (data as ArrayBufferView).byteOffset, (data as ArrayBufferView).byteLength)
+          : new Uint8Array(data as ArrayBuffer);
+        this.chunks.push(bytes);
+      }
+      async digest(): Promise<Uint8Array> {
+        const combined = new Uint8Array(this.chunks.reduce((n, c) => n + c.length, 0));
+        let offset = 0;
+        for (const c of this.chunks) { combined.set(c, offset); offset += c.length; }
+        if (this.key) {
+          const k = await this.key;
+          return new Uint8Array(await crypto.subtle.sign('HMAC', k, combined));
+        }
+        return new Uint8Array(await crypto.subtle.digest('SHA-256', combined));
+      }
+    }
 
     const url = new URL(endpoint);
     const signer = new SignatureV4({
       credentials: { accessKeyId, secretAccessKey },
       region,
       service: 'bedrock',
-      sha256: Sha256,
+      sha256: WebCryptoSha256 as never,
+      // url.pathname is already percent-encoded (e.g. %3A for ':' in the model ID).
+      // uriEscapePath:true (default) would double-encode '%' → '%25', producing
+      // '%253A' instead of '%3A' and a wrong canonical hash. Disable it so the
+      // path is used as-is.
+      uriEscapePath: false,
     });
 
     const request = await signer.sign({
@@ -70,16 +129,26 @@ export async function* streamBedrock(
     return;
   }
 
-  // Pass the Authorization value in a custom header the proxy won't strip
+  // Write the Authorization value to KV so the proxy can inject it.
+  // Must complete before the fetch — proxy reads KV at request time.
+  const authKey = Object.keys(signedHeaders).find(k => k.toLowerCase() === 'authorization');
+  const authValue = (authKey ? signedHeaders[authKey] : '') ?? '';
+  try {
+    await writeBedrockAuthToKv(authValue);
+  } catch (e) {
+    yield { type: 'error', error: `Bedrock: failed to write auth to KV: ${String(e)}` };
+    return;
+  }
+
+  // Forward SigV4 headers (x-amz-date, x-amz-content-sha256, etc.) but NOT
+  // Authorization or host — Authorization is injected by the proxy from KV.
   const fetchHeaders: Record<string, string> = {
     'Content-Type': 'application/json',
   };
   for (const [k, v] of Object.entries(signedHeaders)) {
-    if (k.toLowerCase() === 'authorization') {
-      fetchHeaders['x-cribl-aws-auth'] = v;
-    } else if (k.toLowerCase() !== 'host') {
-      fetchHeaders[k] = v;
-    }
+    const lower = k.toLowerCase();
+    if (lower === 'authorization' || lower === 'host') continue;
+    fetchHeaders[k] = v;
   }
 
   const response = await fetch(endpoint, {
@@ -101,37 +170,60 @@ export async function* streamBedrock(
     return;
   }
 
-  const decoder = new TextDecoder();
-  let buffer = '';
+  // Bedrock invoke-with-response-stream returns AWS binary EventStream frames, NOT SSE.
+  // Frame layout: [4B total_len][4B headers_len][4B prelude_crc][headers…][payload JSON][4B msg_crc]
+  // Payload is {"bytes":"base64..."} where atob(bytes) is the Anthropic-format event JSON.
+  const dec = new TextDecoder();
+  let buf = new Uint8Array(0);
 
   try {
     while (true) {
       const { done, value } = await reader.read();
-      if (done) break;
 
-      buffer += decoder.decode(value, { stream: true });
-      const lines = buffer.split('\n');
-      buffer = lines.pop() ?? '';
-
-      for (const line of lines) {
-        if (!line.startsWith('data: ')) continue;
-        const data = line.slice(6).trim();
-        if (data === '[DONE]') break;
-
-        try {
-          const event = JSON.parse(data) as {
-            type: string;
-            delta?: { type: string; text?: string };
-          };
-          if (event.type === 'content_block_delta' && event.delta?.type === 'text_delta') {
-            yield { type: 'text', text: event.delta.text ?? '' };
-          } else if (event.type === 'message_stop') {
-            yield { type: 'done' };
-          }
-        } catch {
-          // ignore
-        }
+      if (value) {
+        const tmp = new Uint8Array(buf.length + value.length);
+        tmp.set(buf);
+        tmp.set(value, buf.length);
+        buf = tmp;
       }
+
+      // Parse all complete EventStream frames present in the buffer
+      while (buf.length >= 16) {
+        const view = new DataView(buf.buffer, buf.byteOffset, buf.byteLength);
+        const totalLen = view.getUint32(0, false); // big-endian
+        if (totalLen < 16 || buf.length < totalLen) break;
+
+        const headersLen = view.getUint32(4, false);
+        const payloadStart = 12 + headersLen;
+        const payloadEnd = totalLen - 4;
+
+        if (payloadEnd > payloadStart) {
+          const payloadText = dec.decode(buf.slice(payloadStart, payloadEnd));
+          try {
+            const envelope = JSON.parse(payloadText) as { bytes?: string; message?: string };
+            if (envelope.bytes) {
+              const eventText = atob(envelope.bytes);
+              const event = JSON.parse(eventText) as {
+                type: string;
+                delta?: { type: string; text?: string };
+              };
+              if (event.type === 'content_block_delta' && event.delta?.type === 'text_delta') {
+                yield { type: 'text', text: event.delta.text ?? '' };
+              } else if (event.type === 'message_stop') {
+                yield { type: 'done' };
+              }
+            } else if (envelope.message) {
+              yield { type: 'error', error: `Bedrock stream error: ${envelope.message}` };
+              return;
+            }
+          } catch {
+            // ignore malformed frames
+          }
+        }
+        buf = buf.slice(totalLen);
+      }
+
+      if (done) break;
     }
   } finally {
     reader.releaseLock();
