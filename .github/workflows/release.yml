@@ -12,19 +12,37 @@ jobs:
   release:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7.0.0
+        with:
+          fetch-depth: 0
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v4.4.0
         with:
           node-version: '22'
+          cache: npm
 
       - run: npm ci
+
       - run: npm run lint
+
       - run: npm run package -- --version "${GITHUB_REF_NAME#v}"
 
-      - name: Create GitHub Release
-        uses: softprops/action-gh-release@v2
+      - name: Publish pack layout for Git install
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          node scripts/prepare-git-pack.mjs --version "${GITHUB_REF_NAME#v}"
+          git add -f static default
+          git diff --staged --quiet && echo "Pack layout unchanged; skipping tag update." && exit 0
+          git commit -m "chore(release): add Cribl pack layout for Git install"
+          git tag -f "${GITHUB_REF_NAME}"
+          git push origin "${GITHUB_REF_NAME}" --force
+
+      - name: Create GitHub Release with .tgz
+        uses: softprops/action-gh-release@v3.0.1
         with:
-          files: build/*.tgz
+          tag_name: ${{ github.ref_name }}
+          name: App Canvas ${{ github.ref_name }}
           generate_release_notes: true
+          files: build/*.tgz
           fail_on_unmatched_files: true
