@@ -1,7 +1,8 @@
 /**
- * Materialize the Cribl App Platform pack layout at the repo root for Git-based installs.
- * Writes `static/` (from `dist/`) and `default/proxies.yml` (from `config/proxies.yml`).
- * Run after `npm run build`; release CI commits the output on the release tag.
+ * Materialize the Cribl App Platform pack layout at the repo root for Git-based
+ * installs. Writes `static/` (from `dist/`) and `default/proxies.yml` +
+ * `default/policies.yml` (from `config/`). Run after `npm run build`; release CI
+ * commits the output onto the release tag so Cribl "Import from Git" can serve it.
  *
  * Usage: node scripts/prepare-git-pack.mjs [--version X.Y.Z]
  */
