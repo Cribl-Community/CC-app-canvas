@@ -28,6 +28,8 @@ export default function App() {
   const [settings, setSettings] = useState<Partial<Settings>>({ provider: 'anthropic', model: 'claude-sonnet-4-5' });
   const [downloading, setDownloading] = useState(false);
   const [downloadingSource, setDownloadingSource] = useState(false);
+  const [publishStatus, setPublishStatus] = useState<'idle' | 'building' | 'uploading' | 'installing' | 'success' | 'error'>('idle');
+  const [publishError, setPublishError] = useState('');
   const [buildError, setBuildError] = useState('');
   const [chatWidthPct, setChatWidthPct] = useState(40);
   const abortRef = useRef<AbortController | null>(null);
@@ -308,6 +310,56 @@ export default function App() {
     }
   };
 
+  const handlePublish = async () => {
+    if (publishStatus !== 'idle' || Object.keys(files).length === 0) return;
+    const meta = projects.find(p => p.id === activeProjectId);
+    if (!meta) return;
+
+    const criblApiUrl = (window as unknown as { CRIBL_API_URL?: string }).CRIBL_API_URL ?? '/api/v1';
+    const appId = meta.appId || meta.name.toLowerCase().replace(/[^a-z0-9-]/g, '-') || 'app';
+    const filename = `${appId}.tgz`;
+
+    setPublishStatus('building');
+    setPublishError('');
+    try {
+      const blob = await buildCrbl(meta, files);
+
+      // Step 1: Upload the tgz — returns a `source` token
+      setPublishStatus('uploading');
+      const uploadRes = await fetch(`${criblApiUrl}/apps?filename=${encodeURIComponent(filename)}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/gzip' },
+        body: blob,
+      });
+      if (!uploadRes.ok) {
+        const msg = await uploadRes.text().catch(() => uploadRes.statusText);
+        throw new Error(`Upload failed ${uploadRes.status}: ${msg}`);
+      }
+      const uploadText = await uploadRes.text();
+      const uploadData = JSON.parse(uploadText) as { source: string };
+
+      // Step 2: Install using the source token from step 1.
+      // Use Content-Type: text/plain + JSON.stringify to avoid proxy body corruption.
+      setPublishStatus('installing');
+      const installRes = await fetch(`${criblApiUrl}/apps`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ source: uploadData.source, force: true }),
+      });
+      if (!installRes.ok) {
+        const msg = await installRes.text().catch(() => installRes.statusText);
+        throw new Error(`Install failed ${installRes.status}: ${msg}`);
+      }
+
+      setPublishStatus('success');
+      setTimeout(() => setPublishStatus('idle'), 3000);
+    } catch (e) {
+      setPublishError(e instanceof Error ? e.message : String(e));
+      setPublishStatus('error');
+      setTimeout(() => { setPublishStatus('idle'); setPublishError(''); }, 5000);
+    }
+  };
+
   const fileCount = Object.keys(files).length;
   const activeProject = projects.find(p => p.id === activeProjectId);
 
@@ -343,6 +395,19 @@ export default function App() {
             title="Download raw source files (npm install && npm run dev)"
           >
             {downloadingSource ? '⏳' : '↓'} Source
+          </button>
+          <button
+            className={`header-btn ${publishStatus === 'success' ? 'header-btn-success' : publishStatus === 'error' ? 'header-btn-error' : ''}`}
+            onClick={handlePublish}
+            disabled={publishStatus !== 'idle' || fileCount === 0}
+            title={publishStatus === 'error' ? publishError : 'Build and deploy app to this Cribl instance'}
+          >
+            {publishStatus === 'building' ? '⏳ Building…'
+              : publishStatus === 'uploading' ? '⏳ Uploading…'
+              : publishStatus === 'installing' ? '⏳ Installing…'
+              : publishStatus === 'success' ? '✓ Deployed'
+              : publishStatus === 'error' ? '✗ Failed'
+              : '⬆ Deploy'}
           </button>
           <button
             className="header-btn"

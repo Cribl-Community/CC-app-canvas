@@ -50,10 +50,11 @@ Once a provider is configured, you're ready to build.
 
 | Area | What it does |
 |---|---|
-| **Left sidebar** | Lists all your projects. Click to switch between them. Hover to rename or delete. |
+| **Left sidebar** | Lists all your projects. Click to switch between them. Hover to rename, set the App ID, or delete. |
 | **Chat panel** | Your conversation with the AI. All history is saved per-project. |
 | **Preview panel** | A live running instance of the generated app, rebuilt automatically after each AI response. |
 | **File editor** | Click **</> Files** in the toolbar to open a split code editor. You can manually edit any file and click **Build** to rebuild the preview. |
+| **Deploy button** | Builds and installs the app into this Cribl instance with one click. |
 
 The divider between the chat panel and the preview is draggable — slide it left or right to give more space to whichever side you need.
 
@@ -71,9 +72,21 @@ Manual edits are automatically saved and will be included as context the next ti
 
 ---
 
+## Deploying your app
+
+Click **⬆ Deploy** in the toolbar to build the app bundle and install it directly into this Cribl instance in one shot. The button cycles through its states so you always know where things stand:
+
+`⬆ Deploy` → `⏳ Building…` → `⏳ Uploading…` → `⏳ Installing…` → `✓ Deployed`
+
+If anything goes wrong, the button shows `✗ Failed` with a hover tooltip explaining the error, then resets after a few seconds.
+
+After a successful deploy the app appears immediately in the Cribl App Manager. If the same App ID already exists it is overwritten in place.
+
+---
+
 ## Downloading your app
 
-Once you're happy with an app, you can download it in two formats from the toolbar:
+You can also download the app in two formats from the toolbar for manual installation or local development:
 
 | Button | What you get |
 |---|---|
@@ -86,7 +99,8 @@ Once you're happy with an app, you can download it in two formats from the toolb
 
 All projects are stored in the Cribl KV store scoped to your App Canvas installation — they persist across sessions and are private to your Cribl instance.
 
-- **Rename** a project by hovering over it in the sidebar and clicking the edit icon, or by double-clicking the name.
+- **Rename** a project by hovering over it in the sidebar and clicking the pencil icon next to the project name.
+- **Set the App ID** in the same rename form. The App ID is the identifier used as the package name when deploying or downloading — it must be lowercase letters, numbers, and hyphens only (e.g. `my-dashboard`). It is auto-derived from the project name but can be set independently.
 - **Delete** a project from the sidebar hover menu. Deletion is permanent.
 - Projects are named automatically from your first message. You can rename them at any time.
 
