@@ -1,0 +1,68 @@
+# External API declarations for Cribl Vibe Coder
+# The platform proxy injects auth headers and validates these domains at request time.
+
+api.anthropic.com:
+  timeout: 120000
+  paths:
+    allowlist:
+      - /v1/messages
+  headers:
+    inject:
+      x-api-key: kv.anthropicApiKey
+
+# AWS Bedrock — common regions (add more as needed)
+# Authorization is SigV4-signed per-request in the browser, written to KV key
+# `bedrockAuth` immediately before each fetch, and injected here by the proxy.
+bedrock-runtime.us-east-1.amazonaws.com:
+  timeout: 120000
+  headers:
+    inject:
+      Authorization: kv.bedrockAuth
+
+bedrock-runtime.us-west-2.amazonaws.com:
+  timeout: 120000
+  headers:
+    inject:
+      Authorization: kv.bedrockAuth
+
+bedrock-runtime.eu-west-1.amazonaws.com:
+  timeout: 120000
+  headers:
+    inject:
+      Authorization: kv.bedrockAuth
+
+bedrock-runtime.eu-central-1.amazonaws.com:
+  timeout: 120000
+  headers:
+    inject:
+      Authorization: kv.bedrockAuth
+
+bedrock-runtime.ap-northeast-1.amazonaws.com:
+  timeout: 120000
+  headers:
+    inject:
+      Authorization: kv.bedrockAuth
+
+bedrock-runtime.ap-southeast-1.amazonaws.com:
+  timeout: 120000
+  headers:
+    inject:
+      Authorization: kv.bedrockAuth
+
+bedrock-runtime.ap-southeast-2.amazonaws.com:
+  timeout: 120000
+  headers:
+    inject:
+      Authorization: kv.bedrockAuth
+
+# esm.sh CDN — used by esbuild-wasm to resolve npm packages at bundle time
+esm.sh:
+  timeout: 30000
+
+# unpkg.com — used to load esbuild.wasm
+unpkg.com:
+  timeout: 30000
+
+# Tailwind CSS CDN — used in preview iframe for generated app styling
+cdn.tailwindcss.com:
+  timeout: 30000
