@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="48" height="48">
+  <!-- Easel legs -->
+  <line x1="24" y1="36" x2="10" y2="46" stroke="#5b21b6" stroke-width="2.5" stroke-linecap="round"/>
+  <line x1="24" y1="36" x2="38" y2="46" stroke="#5b21b6" stroke-width="2.5" stroke-linecap="round"/>
+  <line x1="24" y1="36" x2="24" y2="46" stroke="#5b21b6" stroke-width="2.5" stroke-linecap="round"/>
+
+  <!-- Canvas frame -->
+  <rect x="8" y="4" width="32" height="28" rx="2" ry="2" fill="#ede9fe" stroke="#7c3aed" stroke-width="2.5"/>
+
+  <!-- Canvas surface (painting area) -->
+  <rect x="11" y="7" width="26" height="22" rx="1" fill="white"/>
+
+  <!-- Colorful brushstrokes on canvas -->
+  <path d="M14 20 Q18 14 22 18 Q26 22 30 16 Q32 13 34 15" stroke="#f59e0b" stroke-width="2.2" fill="none" stroke-linecap="round"/>
+  <path d="M13 25 Q17 21 21 23 Q25 25 29 21 Q32 19 35 22" stroke="#10b981" stroke-width="2" fill="none" stroke-linecap="round"/>
+  <circle cx="16" cy="13" r="2.5" fill="#ef4444" opacity="0.8"/>
+  <circle cx="22" cy="11" r="2" fill="#3b82f6" opacity="0.8"/>
+  <circle cx="29" cy="12" r="2.5" fill="#f59e0b" opacity="0.8"/>
+
+  <!-- Paintbrush (diagonal, overlapping corner) -->
+  <g transform="rotate(-35, 38, 10)">
+    <!-- Handle -->
+    <rect x="35" y="2" width="4" height="14" rx="1.5" fill="#92400e"/>
+    <!-- Ferrule -->
+    <rect x="35" y="15" width="4" height="3" rx="0.5" fill="#9ca3af"/>
+    <!-- Bristles -->
+    <ellipse cx="37" cy="21" rx="2.2" ry="4" fill="#7c3aed"/>
+    <!-- Tip -->
+    <ellipse cx="37" cy="25" rx="1" ry="1.5" fill="#5b21b6"/>
+  </g>
+</svg>
