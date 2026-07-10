@@ -17,14 +17,12 @@ interface AnthropicMessage {
 
 /**
  * Stream a response from Anthropic Claude.
- * The API key can be supplied directly (stored in localStorage via Settings)
- * or injected server-side by the Cribl proxy (proxies.yml kv.anthropic_api_key).
- * x-api-key is not in Cribl's stripped-headers list, so it passes through the proxy.
+ * The API key is stored encrypted in Cribl KV and injected by the proxy via
+ * proxies.yml (x-api-key: kv.anthropicApiKey). The browser never reads or passes it.
  */
 export async function* streamAnthropic(
   messages: ChatMessage[],
   model: string,
-  apiKey?: string,
   signal?: AbortSignal,
 ): AsyncGenerator<StreamChunk> {
   const apiMessages: AnthropicMessage[] = messages.map(m => ({
@@ -37,7 +35,6 @@ export async function* streamAnthropic(
     'anthropic-version': '2023-06-01',
     'anthropic-dangerous-direct-browser-access': 'true',
   };
-  if (apiKey) headers['x-api-key'] = apiKey;
 
   const response = await fetch('https://api.anthropic.com/v1/messages', {
     method: 'POST',

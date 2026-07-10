@@ -14,7 +14,7 @@ export async function* streamAI(
 
   if (provider === 'anthropic') {
     const model = settings.model ?? DEFAULT_ANTHROPIC_MODEL;
-    yield* streamAnthropic(messages, model, settings.anthropicApiKey, signal);
+    yield* streamAnthropic(messages, model, signal);
   } else {
     const model = settings.model ?? DEFAULT_BEDROCK_MODEL;
     const region = settings.bedrockRegion ?? 'us-east-1';
@@ -22,7 +22,10 @@ export async function* streamAI(
     const secretAccessKey = settings.bedrockSecretAccessKey ?? '';
 
     if (!accessKeyId || !secretAccessKey) {
-      yield { type: 'error', error: 'AWS credentials not configured. Open Settings to add your Bedrock access key.' };
+      const hint = settings.bedrockCredsSet
+        ? 'Bedrock credentials must be re-entered each session. Open Settings to re-enter your AWS credentials.'
+        : 'AWS credentials not configured. Open Settings to add your Bedrock access key.';
+      yield { type: 'error', error: hint };
       return;
     }
 

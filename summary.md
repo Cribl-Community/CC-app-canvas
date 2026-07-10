@@ -1,48 +1,47 @@
-# Plan: Manual Build Button + Error Panel in Editor
+# Encrypted Credentials — Implementation Plan (revised)
 
-## Goal
-Replace the live-on-every-keystroke rebuild with an explicit **Build** button in the editor
-toolbar. Build errors appear in a dedicated panel below the Monaco editor instead of
-overlaying the preview iframe.
+## Overview
 
----
-
-## How it works today
-- `handleFileChange` in `App.tsx` calls `setPreviewTrigger(t => t + 1)` on every keystroke
-- `PreviewPanel` watches `trigger`, runs `bundleFiles()` on every change, and shows errors
-  inside the preview pane
+All LLM credentials are stored encrypted in Cribl KV (`?encrypted=true`). The Cribl proxy reads encrypted KV values server-side and injects them as headers — the browser never needs to read credentials back. A **sentinel key** (`anthropicApiKeySet`, `bedrockCredsSet`) is written alongside each secret so the app can check "is this configured?" without reading the encrypted value.
 
 ---
 
-## Proposed changes
+## Architecture
 
-### 1 · `App.tsx`
-- Remove `setPreviewTrigger(t => t + 1)` from `handleFileChange` so typing no longer auto-builds
-- Add `buildError` state (`string`)
-- Pass `onBuild` (increments `previewTrigger`) and `buildError` down to `EditorPanel`
-- Add `onBuildResult` prop handler to receive build outcome from `PreviewPanel` and update `buildError`
+| Credential | KV key (encrypted) | Sentinel key | How injected |
+|---|---|---|---|
+| Anthropic API key | `anthropicApiKey` | `anthropicApiKeySet` | `proxies.yml` → `x-api-key: kv.anthropicApiKey` |
+| Bedrock Access Key ID | `bedrockAccessKeyId` | `bedrockCredsSet` | `proxies.yml` (future — current bedrockAuth pattern unchanged) |
+| Bedrock Secret Access Key | `bedrockSecretAccessKey` | `bedrockCredsSet` | (same) |
 
-### 2 · `src/components/Preview/PreviewPanel.tsx`
-- Add `onBuildResult?: (error: string) => void` prop
-- After `bundleFiles()` resolves, call `onBuildResult('')` on success or `onBuildResult(errorMsg)` on failure
-- Keep the inline preview-error overlay for runtime errors, but remove the static build-error
-  panel from the preview pane (errors now live in the editor pane)
-
-### 3 · `src/components/Editor/EditorPanel.tsx`
-- Add `onBuild: () => void` and `buildError: string` props
-- Add a **▶ Build** button to the editor tab-bar toolbar
-- Below the Monaco editor, render a collapsible `<pre>` error panel when `buildError` is non-empty
-  (styled like the existing preview-error — dark background, red text)
-- Show a green checkmark / "Built" badge briefly after a successful build (clears after 3 s)
-
-### 4 · `src/App.css`
-- Add styles for `.editor-error-panel` (below the editor, dark bg, monospace, scrollable)
-- Add styles for `.build-btn` (slightly more prominent than a regular icon button)
+The existing Bedrock `bedrockAuth` KV relay (browser writes pre-signed Authorization header, proxy injects it) is unchanged — the AWS key/secret are now stored encrypted.
 
 ---
 
-## Task list
-1. Update `App.tsx` — remove auto-trigger, add `buildError` state, wire props
-2. Update `PreviewPanel.tsx` — add `onBuildResult` callback
-3. Update `EditorPanel.tsx` — add Build button + error panel
-4. Update `App.css` — add error panel and build button styles
+## Tasks
+
+1. **`src/lib/kvstore.ts`**
+   - Add `kvSetEncrypted(key, value)` — PUT with `?encrypted=true`, `Content-Type: text/plain`, raw string body
+   - Update `loadSettings()`: read config blob (non-credential fields only) + read sentinel keys → return `Settings` with empty credential strings but `anthropicApiKeySet` / `bedrockCredsSet` booleans set
+   - Update `saveSettings()`: save only `{provider, model, bedrockRegion}` to config blob; if credential fields are non-empty write them encrypted + write their sentinels
+   - Add `clearAnthropicKey()` export: delete `anthropicApiKey` + `anthropicApiKeySet`
+   - Add `clearBedrockCreds()` export: delete `bedrockAccessKeyId` + `bedrockSecretAccessKey` + `bedrockCredsSet`
+
+2. **`src/types/index.ts`**
+   - Add `anthropicApiKeySet?: boolean` and `bedrockCredsSet?: boolean` to `Settings` (in-memory only, not written to config blob)
+
+3. **`config/proxies.yml`**
+   - Under `api.anthropic.com`, add `headers.inject.x-api-key: kv.anthropicApiKey`
+
+4. **`src/lib/ai/anthropic.ts`**
+   - Remove `if (apiKey) headers['x-api-key'] = apiKey` — proxy now injects it; the `apiKey` param becomes unused/optional and is dropped from the call site
+
+5. **`src/lib/ai/index.ts`**
+   - Stop passing `settings.anthropicApiKey` to `streamAnthropic`
+
+6. **`src/components/Settings/SettingsModal.tsx`**
+   - Credential fields show a "••••• (configured)" disabled placeholder when `*Set` flag is true and input is empty
+   - "Clear" button next to each configured credential group
+   - On close/save: only include credential fields in returned `Settings` if the user typed something new; call `clearAnthropicKey()` / `clearBedrockCreds()` when clearing
+
+7. **Build verification** — `npm run build` clean

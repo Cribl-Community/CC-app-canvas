@@ -43,6 +43,19 @@ async function kvSet(key: string, value: unknown): Promise<void> {
   } catch { /* ignore */ }
 }
 
+// Writes a raw string value encrypted at rest. Encrypted values cannot be read
+// back by the browser (the Cribl proxy can inject them via proxies.yml kv.* refs).
+// Use a companion sentinel key to track whether a secret has been set.
+async function kvSetEncrypted(key: string, value: string): Promise<void> {
+  try {
+    await fetch(`${base()}/kvstore/${key}?encrypted=true`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'text/plain' },
+      body: value,
+    });
+  } catch { /* ignore */ }
+}
+
 async function kvDelete(key: string): Promise<void> {
   try {
     await fetch(`${base()}/kvstore/${key}`, { method: 'DELETE' });
@@ -88,20 +101,90 @@ function lsDel(key: string): void {
 }
 
 // ── Settings ──────────────────────────────────────────────────────────────────
-// All settings (including API keys) are stored exclusively in Cribl's KV store.
-// No plaintext sync stores (localStorage, sessionStorage, window.name) are used.
+// Non-sensitive settings (provider, model, bedrockRegion) are stored in the
+// 'settings/config' blob. Credentials are stored separately with ?encrypted=true
+// so they are encrypted at rest and injectable by the Cribl proxy via proxies.yml.
+// Encrypted values cannot be read back by the browser; sentinel keys track presence.
+//
+// KV layout:
+//   settings/config          → { provider, model, bedrockRegion }  (plaintext JSON)
+//   anthropicApiKey          → encrypted string (write-only; proxy injects via x-api-key)
+//   anthropicApiKeySet       → 'true' sentinel
+//   bedrockAccessKeyId       → encrypted string (write-only)
+//   bedrockSecretAccessKey   → encrypted string (write-only)
+//   bedrockCredsSet          → 'true' sentinel
+
+const SENTINEL_ANTHROPIC = 'anthropicApiKeySet';
+const SENTINEL_BEDROCK    = 'bedrockCredsSet';
 
 function nonEmpty(s: Partial<Settings> | null): s is Partial<Settings> {
   return s !== null && Object.keys(s).length > 0;
 }
 
 export async function loadSettings(): Promise<Partial<Settings>> {
-  const kv = await kvGet<Partial<Settings>>('settings/config');
-  return nonEmpty(kv) ? kv! : {};
+  const [config, anthropicSet, bedrockSet] = await Promise.all([
+    kvGet<Partial<Settings>>('settings/config'),
+    kvGet<string>(SENTINEL_ANTHROPIC),
+    kvGet<string>(SENTINEL_BEDROCK),
+  ]);
+  const base = nonEmpty(config) ? config! : {};
+  return {
+    ...base,
+    // Credential fields are always empty on load (encrypted, unreadable).
+    // The *Set flags let the UI show "configured" state without the plaintext value.
+    anthropicApiKey: '',
+    bedrockAccessKeyId: '',
+    bedrockSecretAccessKey: '',
+    // kvGet double-parses JSON-encoded strings: 'true' (string) → true (boolean).
+    // String() normalises both forms so the comparison works after page refresh.
+    anthropicApiKeySet: String(anthropicSet) === 'true',
+    bedrockCredsSet: String(bedrockSet) === 'true',
+  };
 }
 
+type ConfigFields = Pick<Settings, 'provider' | 'model' | 'bedrockRegion'>;
+
 export async function saveSettings(settings: Partial<Settings>): Promise<void> {
-  await kvSet('settings/config', settings);
+  // Only persist non-credential fields in the plaintext config blob.
+  const config: Partial<ConfigFields> = {};
+  if (settings.provider !== undefined)     config.provider = settings.provider;
+  if (settings.model !== undefined)        config.model = settings.model;
+  if (settings.bedrockRegion !== undefined) config.bedrockRegion = settings.bedrockRegion;
+  await kvSet('settings/config', config);
+
+  // Persist credentials encrypted if the user entered new values.
+  if (settings.anthropicApiKey) {
+    await Promise.all([
+      kvSetEncrypted('anthropicApiKey', settings.anthropicApiKey),
+      kvSet(SENTINEL_ANTHROPIC, 'true'),
+    ]);
+  }
+  if (settings.bedrockAccessKeyId || settings.bedrockSecretAccessKey) {
+    await Promise.all([
+      settings.bedrockAccessKeyId
+        ? kvSetEncrypted('bedrockAccessKeyId', settings.bedrockAccessKeyId)
+        : Promise.resolve(),
+      settings.bedrockSecretAccessKey
+        ? kvSetEncrypted('bedrockSecretAccessKey', settings.bedrockSecretAccessKey)
+        : Promise.resolve(),
+      kvSet(SENTINEL_BEDROCK, 'true'),
+    ]);
+  }
+}
+
+export async function clearAnthropicKey(): Promise<void> {
+  await Promise.all([
+    kvDelete('anthropicApiKey'),
+    kvDelete(SENTINEL_ANTHROPIC),
+  ]);
+}
+
+export async function clearBedrockCreds(): Promise<void> {
+  await Promise.all([
+    kvDelete('bedrockAccessKeyId'),
+    kvDelete('bedrockSecretAccessKey'),
+    kvDelete(SENTINEL_BEDROCK),
+  ]);
 }
 
 // ── Projects ──────────────────────────────────────────────────────────────────

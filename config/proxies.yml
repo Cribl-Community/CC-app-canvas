@@ -6,6 +6,9 @@ api.anthropic.com:
   paths:
     allowlist:
       - /v1/messages
+  headers:
+    inject:
+      x-api-key: kv.anthropicApiKey
 
 # AWS Bedrock — common regions (add more as needed)
 # Authorization is SigV4-signed per-request in the browser, written to KV key

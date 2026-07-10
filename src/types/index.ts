@@ -3,10 +3,16 @@ export type AIProvider = 'anthropic' | 'bedrock';
 export interface Settings {
   provider: AIProvider;
   model: string;
-  anthropicApiKey: string;
   bedrockRegion: string;
+  // Credential fields — always empty when loaded from KV (encrypted, unreadable).
+  // Only populated transiently when the user enters new values in the Settings modal.
+  anthropicApiKey: string;
   bedrockAccessKeyId: string;
   bedrockSecretAccessKey: string;
+  // Sentinel flags — readable from KV, indicate whether a credential has been saved.
+  // Never written to the config blob; populated by loadSettings() from sentinel keys.
+  anthropicApiKeySet?: boolean;
+  bedrockCredsSet?: boolean;
 }
 
 export interface ProjectMeta {
