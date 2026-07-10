@@ -101,10 +101,10 @@ export default function App() {
 
   const handleNewProject = () => createProject();
 
-  const handleRenameProject = async (id: string, name: string) => {
+  const handleRenameProject = async (id: string, name: string, appId?: string) => {
     const meta = projects.find(p => p.id === id);
     if (!meta) return;
-    const updated = { ...meta, name, updatedAt: Date.now() };
+    const updated = { ...meta, name, appId: appId ?? meta.appId, updatedAt: Date.now() };
     await saveProjectMeta(updated);
     setProjects(prev => prev.map(p => p.id === id ? updated : p));
   };
@@ -171,7 +171,8 @@ export default function App() {
     // Auto-name the project from the first message
     if (messages.length === 0) {
       const shortName = text.slice(0, 40) + (text.length > 40 ? '…' : '');
-      handleRenameProject(projectId, shortName);
+      const autoAppId = shortName.toLowerCase().replace(/[^a-z0-9-]/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '') || 'app';
+      handleRenameProject(projectId, shortName, autoAppId);
     }
 
     abortRef.current = new AbortController();
@@ -281,7 +282,8 @@ export default function App() {
     setDownloading(true);
     try {
       const blob = await buildCrbl(meta, files);
-      triggerDownload(blob, `${meta.name.toLowerCase().replace(/[^a-z0-9-]/g, '-')}.tgz`);
+      const dlName = meta.appId || meta.name.toLowerCase().replace(/[^a-z0-9-]/g, '-') || 'app';
+      triggerDownload(blob, `${dlName}.tgz`);
     } catch (e) {
       console.error('Download failed:', e);
     } finally {
@@ -297,8 +299,8 @@ export default function App() {
     setDownloadingSource(true);
     try {
       const blob = await buildSourceTgz(meta, files);
-      const slug = meta.name.toLowerCase().replace(/[^a-z0-9-]/g, '-');
-      triggerDownload(blob, `${slug}-source.tgz`);
+      const dlName = meta.appId || meta.name.toLowerCase().replace(/[^a-z0-9-]/g, '-') || 'app';
+      triggerDownload(blob, `${dlName}-source.tgz`);
     } catch (e) {
       console.error('Source download failed:', e);
     } finally {

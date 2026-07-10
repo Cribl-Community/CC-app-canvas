@@ -7,22 +7,53 @@ interface Props {
   onSelect: (id: string) => void;
   onNew: () => void;
   onDelete: (id: string) => void;
-  onRename: (id: string, name: string) => void;
+  onRename: (id: string, name: string, appId?: string) => void;
+}
+
+function toAppId(name: string): string {
+  return name.toLowerCase().replace(/[^a-z0-9-]/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '') || 'app';
 }
 
 export function ProjectSidebar({ projects, activeId, onSelect, onNew, onDelete, onRename }: Props) {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editName, setEditName] = useState('');
+  const [editAppId, setEditAppId] = useState('');
+  // Track whether the user has manually edited the appId so we stop auto-syncing from name
+  const [appIdManuallyEdited, setAppIdManuallyEdited] = useState(false);
 
   const startEdit = (p: ProjectMeta, e: React.MouseEvent) => {
     e.stopPropagation();
     setEditingId(p.id);
     setEditName(p.name);
+    setEditAppId(p.appId || toAppId(p.name));
+    setAppIdManuallyEdited(!!p.appId);
+  };
+
+  const handleNameChange = (value: string) => {
+    setEditName(value);
+    if (!appIdManuallyEdited) {
+      setEditAppId(toAppId(value));
+    }
+  };
+
+  const handleAppIdChange = (value: string) => {
+    // Only allow valid appId characters as the user types
+    const sanitised = value.toLowerCase().replace(/[^a-z0-9-]/g, '');
+    setEditAppId(sanitised);
+    setAppIdManuallyEdited(true);
   };
 
   const commitEdit = (id: string) => {
-    if (editName.trim()) onRename(id, editName.trim());
+    if (editName.trim()) {
+      onRename(id, editName.trim(), editAppId || toAppId(editName.trim()));
+    }
     setEditingId(null);
+    setAppIdManuallyEdited(false);
+  };
+
+  const cancelEdit = () => {
+    setEditingId(null);
+    setAppIdManuallyEdited(false);
   };
 
   return (
@@ -42,21 +73,47 @@ export function ProjectSidebar({ projects, activeId, onSelect, onNew, onDelete, 
             onClick={() => onSelect(p.id)}
           >
             {editingId === p.id ? (
-              <input
-                className="sidebar-rename-input"
-                value={editName}
-                autoFocus
-                onChange={e => setEditName(e.target.value)}
-                onBlur={() => commitEdit(p.id)}
-                onKeyDown={e => {
-                  if (e.key === 'Enter') commitEdit(p.id);
-                  if (e.key === 'Escape') setEditingId(null);
-                }}
-                onClick={e => e.stopPropagation()}
-              />
+              <div className="sidebar-edit-form" onClick={e => e.stopPropagation()}>
+                <div className="sidebar-appid-row">
+                  <span className="sidebar-appid-label">Name</span>
+                  <input
+                    className="sidebar-rename-input"
+                    value={editName}
+                    autoFocus
+                    placeholder="Project name"
+                    onChange={e => handleNameChange(e.target.value)}
+                    onKeyDown={e => {
+                      if (e.key === 'Enter') commitEdit(p.id);
+                      if (e.key === 'Escape') cancelEdit();
+                    }}
+                  />
+                </div>
+                <div className="sidebar-appid-row">
+                  <span className="sidebar-appid-label">App ID</span>
+                  <input
+                    className="sidebar-rename-input sidebar-appid-input"
+                    value={editAppId}
+                    placeholder="app-id"
+                    onChange={e => handleAppIdChange(e.target.value)}
+                    onKeyDown={e => {
+                      if (e.key === 'Enter') commitEdit(p.id);
+                      if (e.key === 'Escape') cancelEdit();
+                    }}
+                  />
+                </div>
+                <div className="sidebar-edit-actions">
+                  <button className="btn-xs btn-primary" onClick={() => commitEdit(p.id)}>Save</button>
+                  <button className="btn-xs" onClick={cancelEdit}>Cancel</button>
+                </div>
+              </div>
             ) : (
               <>
-                <span className="sidebar-item-name">{p.name}</span>
+                <div className="sidebar-item-text">
+                  <span className="sidebar-item-name">{p.name}</span>
+                  {p.appId && p.appId !== toAppId(p.name) && (
+                    <span className="sidebar-item-appid">{p.appId}</span>
+                  )}
+                </div>
                 <div className="sidebar-item-actions">
                   <button
                     className="icon-btn-sm"

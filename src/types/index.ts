@@ -18,6 +18,9 @@ export interface Settings {
 export interface ProjectMeta {
   id: string;
   name: string;
+  /** Cribl app identifier — used as package.json.name in the exported tarball.
+   *  Auto-derived from name (slugified) if not explicitly set. */
+  appId?: string;
   description: string;
   createdAt: number;
   updatedAt: number;

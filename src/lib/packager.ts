@@ -116,7 +116,8 @@ class TarBuilder {
  */
 export async function buildCrbl(meta: ProjectMeta, files: ProjectFiles): Promise<Blob> {
   const tar = new TarBuilder();
-  const appName = meta.name.toLowerCase().replace(/[^a-z0-9-]/g, '-') || 'app';
+  const slug = meta.name.toLowerCase().replace(/[^a-z0-9-]/g, '-') || 'app';
+  const appName = meta.appId || slug;
 
   // ── package.json at archive root ──────────────────────────────────────────
   const packageJson = {
@@ -196,7 +197,8 @@ cdn.tailwindcss.com:
  */
 export async function buildSourceTgz(meta: ProjectMeta, files: ProjectFiles): Promise<Blob> {
   const tar = new TarBuilder();
-  const appName = meta.name.toLowerCase().replace(/[^a-z0-9-]/g, '-') || 'app';
+  const slug = meta.name.toLowerCase().replace(/[^a-z0-9-]/g, '-') || 'app';
+  const appName = meta.appId || slug;
 
   // ── package.json ──────────────────────────────────────────────────────────
   const packageJson = {
