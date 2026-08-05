@@ -1,5 +1,5 @@
 import type { ChatMessage, StreamChunk } from '../../types';
-import { SYSTEM_PROMPT } from './prompts';
+import { getSystemPrompt } from './prompts';
 
 /**
  * Aperture is Cribl's internal AI gateway (Tailscale-backed at http://ai).
@@ -33,11 +33,12 @@ export async function* streamAperture(
 ): AsyncGenerator<StreamChunk> {
   const url = `${baseUrl.replace(/\/$/, '')}/v1/messages`;
 
+  const systemPrompt = await getSystemPrompt();
   const body = JSON.stringify({
     model,
     max_tokens: 16000,
     stream: true,
-    system: SYSTEM_PROMPT,
+    system: systemPrompt,
     messages: messages.map(m => ({ role: m.role, content: m.content })),
   });
 

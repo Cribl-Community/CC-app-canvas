@@ -6,11 +6,10 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 const rootDir = join(__dirname, '..');
 
 // Files/directories to exclude when copying
-// These are project-specific and not part of the template scaffold
+// Only exclude build artifacts and dependencies
 const EXCLUDE = new Set([
   'node_modules', '.git', 'dist', 'build', '.DS_Store',
-  'package-lock.json', 'openapi.json', 'scripts', 'config', 'public',
-  'AGENTS.md', // project-specific documentation
+  'package-lock.json', // npm lock file (not needed in scaffold)
 ]);
 
 async function copyRecursive(srcDir, dstDir) {

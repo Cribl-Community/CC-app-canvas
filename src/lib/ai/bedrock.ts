@@ -1,5 +1,5 @@
 import type { ChatMessage, StreamChunk } from '../../types';
-import { SYSTEM_PROMPT } from './prompts';
+import { getSystemPrompt } from './prompts';
 
 export const BEDROCK_MODELS = [
   { id: 'us.anthropic.claude-opus-4-6-v1', label: 'Claude Opus 4.6 (Bedrock)' },
@@ -52,10 +52,11 @@ export async function* streamBedrock(
   const endpoint = `https://bedrock-runtime.${region}.amazonaws.com/model/${encodeURIComponent(modelId)}/invoke-with-response-stream`;
 
   const apiMessages = messages.map(m => ({ role: m.role, content: m.content }));
+  const systemPrompt = await getSystemPrompt();
   const body = JSON.stringify({
     anthropic_version: 'bedrock-2023-05-31',
     max_tokens: 16000,
-    system: SYSTEM_PROMPT,
+    system: systemPrompt,
     messages: apiMessages,
   });
 

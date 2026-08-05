@@ -1,5 +1,5 @@
 import type { ChatMessage, StreamChunk } from '../../types';
-import { SYSTEM_PROMPT } from './prompts';
+import { getSystemPrompt } from './prompts';
 
 export const ANTHROPIC_MODELS = [
   { id: 'claude-opus-4-5', label: 'Claude Opus 4.5' },
@@ -36,6 +36,8 @@ export async function* streamAnthropic(
     'anthropic-dangerous-direct-browser-access': 'true',
   };
 
+  const systemPrompt = await getSystemPrompt();
+
   const response = await fetch('https://api.anthropic.com/v1/messages', {
     method: 'POST',
     headers,
@@ -43,7 +45,7 @@ export async function* streamAnthropic(
       model,
       max_tokens: 16000,
       stream: true,
-      system: SYSTEM_PROMPT,
+      system: systemPrompt,
       messages: apiMessages,
     }),
     signal,

@@ -1,9 +1,32 @@
-import agentsMd from '../../../AGENTS.md?raw';
+import agentsMdBuiltIn from '../../../AGENTS.md?raw';
 import openApiCurated from '../../openapi-curated.json';
 
 const OPENAPI_SUMMARY = JSON.stringify(openApiCurated, null, 2);
 
-export const SYSTEM_PROMPT = `You are an expert Cribl App Platform developer and AI assistant embedded inside a live browser-based Cribl app builder called App Canvas. Your job is to help users design and build complete, working Cribl apps from natural language descriptions.
+// Load AGENTS.md from scaffolds directory, with fallback to built-in version
+let agentsMdPromise: Promise<string> | null = null;
+
+async function loadAgentsMd(): Promise<string> {
+  if (!agentsMdPromise) {
+    agentsMdPromise = (async () => {
+      try {
+        const response = await fetch(`${import.meta.env.BASE_URL}scaffolds/latest/source/AGENTS.md`);
+        if (response.ok) {
+          return await response.text();
+        }
+      } catch (err) {
+        console.warn('Failed to load AGENTS.md from scaffolds, using built-in version:', err);
+      }
+      return agentsMdBuiltIn;
+    })();
+  }
+  return agentsMdPromise;
+}
+
+export async function getSystemPrompt(): Promise<string> {
+  const agentsMd = await loadAgentsMd();
+
+  return `You are an expert Cribl App Platform developer and AI assistant embedded inside a live browser-based Cribl app builder called App Canvas. Your job is to help users design and build complete, working Cribl apps from natural language descriptions.
 
 ## Platform Rules (READ CAREFULLY)
 
@@ -65,7 +88,23 @@ Include the full platform rules so developers working in external tools have com
 
 \`\`\`
 ${agentsMd}
+\`\`\``;
+}
+
+// Built-in synchronous export for backward compatibility
+export const SYSTEM_PROMPT = `You are an expert Cribl App Platform developer and AI assistant embedded inside a live browser-based Cribl app builder called App Canvas. Your job is to help users design and build complete, working Cribl apps from natural language descriptions.
+
+## Platform Rules (READ CAREFULLY)
+
+${agentsMdBuiltIn}
+
+## Cribl REST API Reference (curated excerpt)
+
+\`\`\`json
+${OPENAPI_SUMMARY}
 \`\`\`
+
+(Use getSystemPrompt() for the latest version from scaffolds)
 
 ### 3. Architecture & Key Files
 List each source file with a one-line description of its purpose.
