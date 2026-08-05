@@ -1,9 +1,4 @@
-import type { ProjectFiles } from '../types';
-
-// Built-in fallback sample app (used if scaffolds directory is unavailable)
-const BUILT_IN_SAMPLE_APP_FILES: ProjectFiles = {
-  'src/index.css': 'body { margin: 0; font-family: system-ui, -apple-system, sans-serif; background: #0f172a; color: #e2e8f0; }\n* { box-sizing: border-box; }',
-  'src/App.tsx': `import { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 
 declare const CRIBL_API_URL: string;
 
@@ -26,7 +21,7 @@ function Badge({ children, variant }: { children: React.ReactNode; variant: 'gre
     blue:  'bg-blue-900 text-blue-300 border border-blue-700',
     red:   'bg-red-900 text-red-300 border border-red-700',
   };
-  return <span className={\`px-2 py-0.5 rounded text-xs font-medium \${cls[variant]}\`}>{children}</span>;
+  return <span className={`px-2 py-0.5 rounded text-xs font-medium ${cls[variant]}`}>{children}</span>;
 }
 
 function Spinner() {
@@ -50,10 +45,10 @@ export default function App() {
     setState('loading');
     setError('');
     try {
-      const res = await fetch(\`\${apiBase}/master/groups\`);
+      const res = await fetch(`${apiBase}/master/groups`);
       if (!res.ok) {
         const text = await res.text().catch(() => res.statusText);
-        throw new Error(\`HTTP \${res.status}: \${text}\`);
+        throw new Error(`HTTP ${res.status}: ${text}`);
       }
       const data = await res.json();
       const items: Group[] = data.items ?? data.groups ?? (Array.isArray(data) ? data : []);
@@ -78,12 +73,14 @@ export default function App() {
   return (
     <div className="min-h-screen bg-slate-900 p-6">
       <div className="max-w-3xl mx-auto">
+
+        {/* Header */}
         <div className="flex items-center justify-between mb-6">
           <div>
             <h1 className="text-xl font-semibold text-white">Worker Groups</h1>
             <p className="text-slate-400 text-sm mt-0.5">
               {state === 'ok'
-                ? \`\${groups.length} group\${groups.length !== 1 ? 's' : ''} · \${totalWorkers} worker\${totalWorkers !== 1 ? 's' : ''} total\`
+                ? `${groups.length} group${groups.length !== 1 ? 's' : ''} · ${totalWorkers} worker${totalWorkers !== 1 ? 's' : ''} total`
                 : state === 'loading' ? 'Fetching from Cribl API…'
                 : 'Could not reach Cribl API'}
             </p>
@@ -96,22 +93,30 @@ export default function App() {
             {state === 'loading' ? <Spinner /> : '↺'} Refresh
           </button>
         </div>
+
+        {/* API URL banner */}
         <div className="bg-slate-800 border border-slate-700 rounded-lg px-4 py-2 mb-4 flex items-center gap-2 text-xs text-slate-400 font-mono">
           <span className="text-slate-500">API</span>
           <span className="text-blue-400">{apiBase}/master/groups</span>
         </div>
+
+        {/* Error state */}
         {state === 'error' && (
           <div className="bg-red-950 border border-red-800 rounded-lg p-4 mb-4 text-red-300 text-sm">
             <div className="font-semibold mb-1">Failed to load groups</div>
             <div className="font-mono text-xs opacity-80">{error}</div>
           </div>
         )}
+
+        {/* Loading state */}
         {state === 'loading' && (
           <div className="flex items-center justify-center py-16 text-slate-500 gap-3">
             <Spinner />
             <span className="text-sm">Loading worker groups…</span>
           </div>
         )}
+
+        {/* Results */}
         {state === 'ok' && (
           <>
             <div className="mb-3">
@@ -123,6 +128,7 @@ export default function App() {
                 className="w-full bg-slate-800 border border-slate-700 rounded px-3 py-2 text-sm text-white placeholder-slate-500 outline-none focus:border-blue-500"
               />
             </div>
+
             {filtered.length === 0 ? (
               <div className="text-center py-12 text-slate-500 text-sm">No groups match your search.</div>
             ) : (
@@ -154,46 +160,4 @@ export default function App() {
       </div>
     </div>
   );
-}`,
-  'src/main.tsx': `import { StrictMode } from 'react';
-import { createRoot } from 'react-dom/client';
-import './index.css';
-import App from './App';
-
-const root = document.getElementById('root');
-if (!root) throw new Error('No #root element found');
-createRoot(root).render(<StrictMode><App /></StrictMode>);`,
-};
-
-async function loadSampleAppFiles(): Promise<ProjectFiles> {
-  try {
-    const [css, tsx, main] = await Promise.all([
-      fetch(`${import.meta.env.BASE_URL}scaffolds/latest/sample-app/src/index.css`).then(r => r.text()),
-      fetch(`${import.meta.env.BASE_URL}scaffolds/latest/sample-app/src/App.tsx`).then(r => r.text()),
-      fetch(`${import.meta.env.BASE_URL}scaffolds/latest/sample-app/src/main.tsx`).then(r => r.text()),
-    ]);
-    return {
-      'src/index.css': css,
-      'src/App.tsx': tsx,
-      'src/main.tsx': main,
-    };
-  } catch (err) {
-    console.warn('Failed to load sample app from scaffolds, using built-in fallback:', err);
-    return BUILT_IN_SAMPLE_APP_FILES;
-  }
 }
-
-// Lazy-load sample files
-let sampleFilesPromise: Promise<ProjectFiles> | null = null;
-
-export async function getSampleAppFiles(): Promise<ProjectFiles> {
-  if (!sampleFilesPromise) {
-    sampleFilesPromise = loadSampleAppFiles();
-  }
-  return sampleFilesPromise;
-}
-
-// Synchronous export for backward compatibility (uses built-in as initial value)
-export const SAMPLE_APP_FILES = BUILT_IN_SAMPLE_APP_FILES;
-
-export const SAMPLE_APP_NAME = 'Sample: Worker Groups';

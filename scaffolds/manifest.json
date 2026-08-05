@@ -1,0 +1,16 @@
+{
+  "latestVersion": "1.0.0",
+  "scaffolds": {
+    "1.0.0": {
+      "createdAt": "2026-08-04",
+      "dependencies": {
+        "react": "^18.3.1",
+        "react-dom": "^18.3.1",
+        "@vitejs/plugin-react": "^4.3.1",
+        "typescript": "~5.6.2",
+        "vite": "^6.0.0"
+      },
+      "notes": "Initial scaffold: React 18.3, Vite 6, TypeScript 5.6"
+    }
+  }
+}

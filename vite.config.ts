@@ -3,6 +3,7 @@ import type { IncomingMessage, ServerResponse } from 'node:http'
 import { readFileSync } from 'node:fs'
 import { join } from 'path'
 import react from '@vitejs/plugin-react'
+import { cpSync } from 'node:fs'
 // @ts-expect-error – no type declarations for this local mjs script
 import { servePackageTgz } from './scripts/pkgutil.mjs'
 
@@ -14,6 +15,16 @@ const packageEndpointPlugin = () => ({
     })
   },
 })
+
+const copyScaffoldsPlugin = () => ({
+  name: 'copy-scaffolds',
+  generateBundle() {
+    const root = process.cwd();
+    const scaffoldsDir = join(root, 'scaffolds');
+    const distScaffoldsDir = join(root, 'dist', 'scaffolds');
+    cpSync(scaffoldsDir, distScaffoldsDir, { recursive: true, force: true });
+  },
+});
 
 const injectScriptFromQueryPlugin = () => {
   let initScriptUrl: string | null = null;
@@ -70,7 +81,7 @@ const criblProxyTarget = process.env.VITE_CRIBL_PROXY_TARGET;
 const criblAuthToken   = process.env.VITE_CRIBL_AUTH_TOKEN;
 
 export default defineConfig({
-  plugins: [react(), packageEndpointPlugin(), injectScriptFromQueryPlugin()],
+  plugins: [react(), packageEndpointPlugin(), injectScriptFromQueryPlugin(), copyScaffoldsPlugin()],
   base: './',
   server: {
     cors: true,

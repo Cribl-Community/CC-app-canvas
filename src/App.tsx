@@ -7,7 +7,7 @@ import {
   saveFile, saveProjectFiles, saveProjectMeta, deleteProject, loadSettings, saveSettings,
 } from './lib/kvstore';
 import { buildCrbl, buildSourceTgz } from './lib/packager';
-import { SAMPLE_APP_FILES, SAMPLE_APP_NAME } from './lib/sampleApp';
+import { getSampleAppFiles, SAMPLE_APP_NAME } from './lib/sampleApp';
 import { ProjectSidebar } from './components/Sidebar/ProjectSidebar';
 import { ChatPanel } from './components/Chat/ChatPanel';
 import { PreviewPanel } from './components/Preview/PreviewPanel';
@@ -111,12 +111,13 @@ export default function App() {
     setProjects(prev => prev.map(p => p.id === id ? updated : p));
   };
 
-  const handleLoadSample = useCallback(() => {
+  const handleLoadSample = useCallback(async () => {
     const id = createProject();
-    setFiles(SAMPLE_APP_FILES);
+    const sampleFiles = await getSampleAppFiles();
+    setFiles(sampleFiles);
     setPreviewTrigger(t => t + 1);
     handleRenameProject(id, SAMPLE_APP_NAME);
-    saveProjectFiles(id, SAMPLE_APP_FILES);
+    saveProjectFiles(id, sampleFiles);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
