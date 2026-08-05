@@ -67187,7 +67187,7 @@
             "type": "string",
             "description": "Access key when <code>awsAuthenticationMethod</code> is <code>manual</code>. Optional on AWS when using IAM roles.",
             "examples": [
-              "AKIAIOSFODNN7EXAMPLE"
+              "<YOUR_AWS_ACCESS_KEY_ID>"
             ]
           },
           "awsAuthenticationMethod": {
@@ -121267,7 +121267,7 @@
         "value": {
           "id": "aws-keypair",
           "secretType": "keypair",
-          "apiKey": "AKIAIOSFODNN7EXAMPLE",
+          "apiKey": "<YOUR_AWS_ACCESS_KEY_ID>",
           "secretKey": "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY",
           "description": "AWS access credentials"
         }
@@ -121288,7 +121288,7 @@
         "value": {
           "id": "aws-keypair",
           "secretType": "keypair",
-          "apiKey": "AKIAI44QH8DHBEXAMPLE",
+          "apiKey": "<YOUR_AWS_ACCESS_KEY_ID>",
           "secretKey": "je7MtGbClwBF/2Zp9Utk/h3yCo8nvbEXAMPLEKEY",
           "description": "AWS access credentials"
         }
@@ -121928,7 +121928,7 @@
           "bucket": "my-pq-bucket",
           "prefix": "mygroup",
           "awsAuthenticationMethod": "manual",
-          "awsApiKey": "AKIAIOSFODNN7EXAMPLE",
+          "awsApiKey": "<YOUR_AWS_ACCESS_KEY_ID>",
           "awsSecretKey": "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY",
           "region": "us-east-1"
         }
@@ -125301,7 +125301,7 @@
             {
               "id": "my-cert",
               "description": "Production TLS certificate",
-              "cert": "-----BEGIN CERTIFICATE-----\nMIIBxTCCAWugAwIBAgIUE...\n-----END CERTIFICATE-----",
+              "cert": "<YOUR_CERTIFICATE_PEM>",
               "privKey": "Private key value hidden for security",
               "certExpiryDate": "2027-01-15T00:00:00.000Z"
             }
@@ -125313,8 +125313,8 @@
         "description": "Example request body for creating a Certificate with PEM-formatted Certificate and private key.",
         "value": {
           "id": "my-cert",
-          "cert": "-----BEGIN CERTIFICATE-----\nMIIBxTCCAWugAwIBAgIUE...\n-----END CERTIFICATE-----",
-          "privKey": "-----BEGIN PRIVATE KEY-----\nMIIEvQIBADANBgkqhki...\n-----END PRIVATE KEY-----"
+          "cert": "<YOUR_CERTIFICATE_PEM>",
+          "privKey": "<YOUR_PRIVATE_KEY_PEM>"
         }
       },
       "CertificateDeleteResponseExamplesCertificateDeleted": {
@@ -125338,7 +125338,7 @@
             {
               "id": "my-cert",
               "description": "Production TLS certificate",
-              "cert": "-----BEGIN CERTIFICATE-----\nMIIBxTCCAWugAwIBAgIUE...\n-----END CERTIFICATE-----",
+              "cert": "<YOUR_CERTIFICATE_PEM>",
               "privKey": "Private key value hidden for security",
               "certExpiryDate": "2027-01-15T00:00:00.000Z"
             }
@@ -125366,9 +125366,9 @@
         "value": {
           "id": "my-cert",
           "description": "Production TLS certificate",
-          "cert": "-----BEGIN CERTIFICATE-----\nMIIBxTCCAWugAwIBAgIUE...\n-----END CERTIFICATE-----",
-          "privKey": "-----BEGIN PRIVATE KEY-----\nMIIEvQIBADANBgkqhki...\n-----END PRIVATE KEY-----",
-          "ca": "-----BEGIN CERTIFICATE-----\nMIIBxTCCAWugAwIBAgIUA...\n-----END CERTIFICATE-----\n-----BEGIN CERTIFICATE-----\nnMIIBxTCCAWugAwIBAgIUB...\n-----END CERTIFICATE-----"
+          "cert": "<YOUR_CERTIFICATE_PEM>",
+          "privKey": "<YOUR_PRIVATE_KEY_PEM>",
+          "ca": "<YOUR_CA_CHAIN_PEM>"
         }
       },
       "GlobalSecretResponseExamplesGlobalSecret": {
@@ -125434,7 +125434,7 @@
               "secretType": "keypair",
               "description": "API key for external data provider",
               "plaintextFields": {
-                "apiKey": "AKIAIOSFODNN7EXAMPLE"
+                "apiKey": "<YOUR_AWS_ACCESS_KEY_ID>"
               },
               "secretReferences": {
                 "secretKey": {
@@ -126886,7 +126886,7 @@
         "description": "Example request body for creating a PrivateKey by providing the private key in PEM format.",
         "value": {
           "id": "my-key",
-          "privKey": "-----BEGIN PRIVATE KEY-----\nMIIEvQIBADANBgkqhki...\n-----END PRIVATE KEY-----"
+          "privKey": "<YOUR_PRIVATE_KEY_PEM>"
         }
       },
       "PrivateKeyListResponseExamplesPrivateKeyList": {
@@ -126924,7 +126924,7 @@
         "value": {
           "id": "my-key",
           "description": "Production RSA key for Snowflake streaming",
-          "privKey": "-----BEGIN PRIVATE KEY-----\nMIIEvQIBADANBgkqhki...\n-----END PRIVATE KEY-----"
+          "privKey": "<YOUR_PRIVATE_KEY_PEM>"
         }
       },
       "CreateProvisioningTokenExamplesCreateStandardToken": {
@@ -127881,7 +127881,7 @@
           },
           "credentials": {
             "method": "manual",
-            "apiKey": "AKIAIOSFODNN7EXAMPLE",
+            "apiKey": "<YOUR_AWS_ACCESS_KEY_ID>",
             "secretKey": "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY",
             "roleToAssume": "arn:aws:iam::123456789012:role/CriblLakeAccess"
           }
@@ -127909,7 +127909,7 @@
         "value": {
           "credentials": {
             "method": "manual",
-            "apiKey": "AKIAIOSFODNN7EXAMPLE",
+            "apiKey": "<YOUR_AWS_ACCESS_KEY_ID>",
             "secretKey": "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY"
           }
         }
