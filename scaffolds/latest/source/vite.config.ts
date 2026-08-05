@@ -3,7 +3,7 @@ import type { IncomingMessage, ServerResponse } from 'node:http'
 import { readFileSync } from 'node:fs'
 import { join } from 'path'
 import react from '@vitejs/plugin-react'
-// @ts-ignore
+// @ts-expect-error - ESM module without TypeScript definitions
 import { servePackageTgz } from './scripts/pkgutil.mjs'
 
 const packageEndpointPlugin = () => ({

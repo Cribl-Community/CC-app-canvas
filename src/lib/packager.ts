@@ -98,7 +98,7 @@ async function loadScaffoldFile(filename: string): Promise<string> {
     if (filename === 'package.json') return JSON.stringify(FALLBACK_PACKAGE_JSON, null, 2);
     if (filename === 'tsconfig.json') return JSON.stringify(FALLBACK_TSCONFIG, null, 2);
     if (filename === 'vite.config.ts') return FALLBACK_VITE_CONFIG;
-    throw new Error(`No fallback for scaffold file: ${filename}`);
+    throw new Error(`No fallback for scaffold file: ${filename}`, { cause: err });
   }
 }
 
