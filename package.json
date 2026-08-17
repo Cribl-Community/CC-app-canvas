@@ -1,7 +1,7 @@
 {
   "name": "cc-app-canvas",
   "private": true,
-  "version": "1.0.28",
+  "version": "1.5.1",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -42,12 +42,12 @@
   },
   "displayName": "App Canvas",
   "author": "Glenn Block - gblock@cribl.io",
-    "tags": {
-      "product": [
-        "stream",
-        "search",
-        "edge",
-        "lake"
+  "tags": {
+    "product": [
+      "stream",
+      "search",
+      "edge",
+      "lake"
     ]
   },
   "cribl": {
