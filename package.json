@@ -41,6 +41,15 @@
     "vite": "^8.0.12"
   },
   "displayName": "App Canvas",
+  "author": "Glenn Block - gblock@cribl.io",
+    "tags": {
+      "product": [
+        "stream",
+        "search",
+        "edge",
+        "lake"
+    ]
+  },
   "cribl": {
     "type": "app",
     "createAppScriptVersion": "0.1.0"
